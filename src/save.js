@@ -1,13 +1,14 @@
 import { BLOCKS, DEFAULT_SEED, GENERATOR_VERSION, PALETTE, withinWorld, WORLD_LIMIT, HEIGHT_LIMIT, BLOCK_SIZE } from './world/blocks.js';
 import { createJourney, snapshotJourney } from './game.js';
 
-export const SAVE_KEY = 'mineworld.skyreach.save.v1';
+export const SAVE_KEY = 'mineworld.skyreach.save.v2';
+export const LEGACY_SAVE_KEY = 'mineworld.skyreach.save.v1';
 export const SETTINGS_KEY = 'mineworld.settings.v1';
 const MAX_EDITS = 50000;
 
 export function validateSave(value) {
   if (!value || typeof value !== 'object' || value.version !== 1 || value.generatorVersion !== GENERATOR_VERSION) {
-    throw new Error('This save uses an unsupported version. Your current world has been kept.');
+    throw new Error('This save uses an unsupported world generation version.');
   }
   if (!Number.isInteger(value.seed) || value.seed < 0 || value.seed > 2147483647) throw new Error('Invalid world seed.');
   if (!Array.isArray(value.edits) || value.edits.length > MAX_EDITS) throw new Error('Invalid or oversized world edits.');
@@ -34,7 +35,11 @@ export function readSave(storage) {
   let raw;
   try { raw = storage.getItem(SAVE_KEY); }
   catch { return { data:null, writable:false, message:'Browser storage is unavailable. Export a save before leaving.' }; }
-  if (!raw) return { data:null, writable:true, message:'New world' };
+  if (!raw) {
+    let legacy=false;
+    try { legacy=Boolean(storage.getItem(LEGACY_SAVE_KEY)); } catch {}
+    return { data:null, writable:true, message:legacy?'New large world · previous prototype save preserved':'New world' };
+  }
   try { return { data:validateSave(JSON.parse(raw)), writable:true, message:'World restored' }; }
   catch { return { data:null, writable:false, raw, message:'An unreadable save is protected. Export it before replacing it.' }; }
 }
