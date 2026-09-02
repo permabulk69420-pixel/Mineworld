@@ -1,10 +1,11 @@
 Journey default: field-tool objective is active and creative flight is disabled.
 Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.
-Desktop diagnostics: 5 FPS
-293 draw calls · 138,639 triangles
-187 chunks · 1 block edits
-XYZ 1.1 / 27.2 / 19.1
-Yaw 0° · Pitch -68°
-Creative · Seed 734921
+Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.
+Desktop diagnostics: 1 FPS
+32 draw calls · 16,485 triangles
+187 chunks · 0 block edits
+XYZ 47.6 / 41.4 / -55.1
+Yaw 0° · Pitch -9°
+Quarry pick · Wake Hollow resonators · 2/3 · feed lumen with Y · Seed 734921
 Actual immersive Quest sessions and headset performance require a device playtest.
 Browser errors:
