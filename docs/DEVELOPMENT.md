@@ -2,62 +2,69 @@
 
 ## v0.2 — The First Passage — 2026-09-02
 
-The owner's first headset test clarified the product direction: Mineworld should be developed as a game first, not primarily as a creative sandbox. The normal entry is now **Journey mode**. Creative remains an explicit development/free-building option via `?creative=1`, with flight and unlimited placement kept out of normal progression.
+The owner's headset test clarified the product direction twice in useful ways. First, Mineworld should be developed as a game first rather than primarily as a creative sandbox. Second, the first Journey implementation still communicated "sandbox" immediately because it visibly exposed the full material palette, gifted blocks at spawn, and placed the first workbench for the player. That opening has now been corrected rather than asking the owner to keep testing through it.
 
-### Shipped game loop
+The normal entry remains **Journey mode**. Creative remains an explicit development/free-building option via `?creative=1`, with flight and unlimited placement kept out of normal progression.
 
-Journey mode now has finite resources and a connected three-location progression chain rather than a creative palette with an objective label attached.
+### Corrected opening
 
-1. New worlds begin at First Light with eight cedar planks and the basic field tool.
-2. Gather cedar and limestone. Materials use different hold-to-gather times; the target outline visibly grows/brightens during the action.
-3. Collect **4 cedar + 6 limestone**, return to the visible field bench beside the First Light lookout, and press **Y** to deliberately craft the quarry pick. Merely walking home does not auto-craft the tool.
-4. The hand tool visibly changes into the quarry pick. Lumen crystal can now be harvested; deepstone still rejects this tool.
-5. Gather **6 lumen crystals** and carry them to the Old Arch. The arch consumes them, visibly wakes, and becomes an actual portal.
-6. Step through the Old Arch to travel across the cloud sea to **Lumen Hollow**. Discovering the island wakes a paired return waystone, leaving a persistent route home.
-7. Lumen Hollow contains **three separate resonators** around the island. Stand near each and press **Y** to feed it one real lumen crystal. Each activation persists and visibly changes the resonator.
-8. When all three resonators are awake, return to the Hollow forge and press **Y** to temper the quarry pick into a visibly luminous **resonant pick**.
-9. Deepstone exists naturally below the island terrain. The resonant pick can finally break it; stone and lumen also become faster to gather with the upgraded tool.
-10. Deepstone is a carried progression resource rather than a tenth build-palette block. Its count appears on the wrist once the resonant pick is active.
-11. Recovering the first deepstone wakes the Hollow forge again, this time into a second portal. Enter it to reach **The Old Quarry**.
-12. Discovering The Old Quarry permanently wakes its heavier return waystone, reconnecting it to Lumen Hollow.
+A fresh Journey now starts with an **empty pack**. No build materials are selectable until they are actually gathered. The desktop hotbar hides unowned materials; the VR wrist literally reads **PACK EMPTY** and draws no material slots. Controller/keyboard selection cannot select a material with zero inventory.
 
-The left wrist now shows the selected material, finite stack count, current tool, current objective, and contextual Journey hint. Material cycling skips empty stacks, a new save initially selects the planks it actually owns instead of an empty Meadow slot, and exhausting a stack advances to another usable material. The resonant state adds the carried deepstone count without expanding the nine-slot building palette. Flight controls and the on-screen Fly button do not leak into Journey mode.
+There is no longer a prebuilt First Light field bench. The first dependency chain is now:
 
-The three hand-tool states are deliberately visible rather than hidden capability flags. The quarry version gains its pick head; the resonant version gains a bright cyan treatment and luminous ring. First Light's field bench, the Old Arch, both waystones, the Hollow resonators, and the forge are lightweight scene props layered over the existing editable voxel world. **Generator version 1 remains unchanged**, so old terrain and player builds survive this progression expansion.
+1. Start with the basic field tool and no carried building blocks.
+2. Gather **3 cedar + 2 limestone**.
+3. Choose a spot on First Light and press **Y** to establish the field bench in front of you. The resources are consumed and the chosen x/z position persists in the Journey save.
+4. Gather **2 additional cedar + 4 additional limestone**.
+5. Return to **your own** bench and press **Y** to make the quarry pick.
+6. Continue into the existing lumen/arch progression.
 
-Journey inventory, tool state, resonator state, arch state, deepstone state, and passage discoveries persist inside the existing version-1 save. Earlier valid saves remain readable. Saves from the short-lived first Journey iterations that had already awakened the arch or advanced beyond a later tool gate are upgraded forward rather than losing progress.
+The short-lived prototype save that contains exactly the untouched eight-plank starter gift is migrated to the empty-pack start. Only that precise unprogressed state loses the obsolete gift; saves with actual gathered resources, edits, tool progression, or later discoveries are retained.
+
+### Connected progression
+
+After the corrected opening, the current progression spine is:
+
+1. The quarry pick unlocks lumen harvesting; deepstone still rejects it.
+2. Gather **6 lumen crystals** and carry them to the Old Arch. The arch consumes them, wakes, and becomes a portal.
+3. Travel to **Lumen Hollow**. Discovery wakes the paired return waystone.
+4. Find the **three Hollow resonators**. Feed each one real lumen crystal with **Y**. Each activation persists and visibly changes the resonator.
+5. Return to the Hollow forge and temper the quarry pick into the luminous **resonant pick**.
+6. Dig beneath the Hollow and recover deepstone. Deepstone is carried as a progression resource rather than a tenth build slot.
+7. The first deepstone wakes the Hollow forge into a second passage to **The Old Quarry**.
+8. Discovering The Old Quarry permanently enables its heavier return waystone to Lumen Hollow.
+
+The three hand-tool states remain visually distinct. The quarry version gains its pick head; the resonant version gains the bright cyan treatment and luminous ring. Generator version 1 remains unchanged, so existing terrain and player block edits survive the progression expansion.
 
 ### Validation status
 
-- **19 unit tests passed** in Actions. Coverage now includes world/chunk/raycast behavior, physics, Quest stick mapping, finite inventory, explicit field-bench crafting, harvest gating, three distinct resonator activations and crystal consumption, resonant-tool gating, non-placeable carried deepstone, both portal pairs, Quarry discovery, and full Journey save round trips.
+- The revised unit suite passed in Actions, including empty-pack start, no placeable starter material, explicit field-bench construction, resource consumption, quarry crafting at the player-established bench, the untouched eight-plank migration, Hollow resonators, resonant-tool gating, deepstone, both portal pairs, and Quarry discovery.
 - Production Vite build passed.
-- Browser regression passed the built game under `/Mineworld/`: public entry remains VR-only; Journey exposes the field-tool objective and refuses creative flight; explicit Creative mode still passes pointer lock, flight, mining, placement, material selection, save reload, and export.
-- The browser suite now also loads a deterministic mid-Hollow Journey state and captures `lumen-hollow.jpg`, then stages the player on the deepstone-awakened forge and requires the **actual runtime portal code** to reach The Old Quarry, mark it discovered, persist that state, and render `old-quarry.jpg`.
-- Browser report contained **no runtime or shader errors**. It explicitly recorded successful Hollow → Quarry traversal and persisted Quarry discovery.
-- The first Quarry browser attempt exposed a test-harness lifecycle bug rather than a game bug: the already-running Hollow page's `pagehide` autosave overwrote the synthetic Quarry save during navigation. The harness now leaves the running page first, writes the staged save from an unstarted page, and the same runtime traversal passes.
-- Inspected the generated title, First Light, building, Lumen Hollow, and Old Quarry screenshots. Moving the Hollow forge southwest fixed the earlier arrival composition where it was effectively in the staged camera's face. The Quarry return waystone is intentionally monumental; the synthetic camera points directly back at it, so actual headset scale/arrival comfort remains a Quest-specific check rather than something to overfit from a flat screenshot.
-- [Actions run 33618889381](https://github.com/permabulk69420-pixel/Mineworld/actions/runs/33618889381) completed build, browser validation, visual-preview publishing, and GitHub Pages deployment successfully for the final code candidate.
+- Browser regression now **fails if fresh Journey exposes any unowned material slot**. It also asserts `Hands · empty pack`, the field-bench objective, and disabled Journey flight.
+- `journey-start.jpg` is generated from the actual fresh Journey runtime. It was inspected: no field bench is present, no material palette is visible, the selected state reads `Hands · empty pack`, and the objective reports cedar 0/3 and limestone 0/2.
+- Creative mode still passes its separate unrestricted regression path: pointer lock, flight, mining, placement, selection, save reload, and export.
+- The staged Hollow and real Hollow → Quarry runtime traversal checks still pass, with no browser/runtime/shader errors.
+- [Actions run 33622487218](https://github.com/permabulk69420-pixel/Mineworld/actions/runs/33622487218) completed build, browser validation, preview publishing, and GitHub Pages deployment successfully for the corrected opening.
 - The deployed game remains at `https://permabulk69420-pixel.github.io/Mineworld/`.
 - Software-rendered browser FPS is intentionally **not** treated as a Quest performance measurement.
-- Actual Quest 3 validation is still needed for mining hold timing, Y-at-bench ergonomics, resonator discoverability, wrist readability, the three changing hand-tool states, both portal transitions, waystone scale, and sustained headset frame rate.
 
 ### Known boundaries
 
 - This is an exploration/crafting progression slice, not yet a survival game: there is no health/hunger pressure, combat, creatures, or death loop.
-- Crafting currently uses contextual world interactions rather than a full recipe/inventory interface: First Light has the quarry recipe; Hollow has resonator feeding and tool tempering.
-- Lumen Hollow now has its own complete gameplay loop instead of being merely a destination.
-- The Old Quarry is now reachable and has a persistent return route, but it does **not yet have its own substantial gameplay loop**. It is the clearest next content target.
-- Deepstone is tracked as a progression resource but does not yet have a downstream recipe/use beyond waking the Quarry passage.
-- Water is decorative rather than simulated fluid.
+- The newly player-established field bench is a persisted scene prop, not a voxel structure with physical collision/destruction yet.
+- Crafting still uses contextual world interactions rather than a general recipe/inventory interface.
+- Lumen Hollow has a complete gameplay beat; The Old Quarry is reachable but does **not yet have its own substantial gameplay loop**.
+- Deepstone is tracked as a progression resource but does not yet have a downstream Quarry use beyond waking the passage.
+- Water remains decorative rather than simulated fluid.
 - The starting region remains finite. Creative flight is clamped to its build limits.
 - Saves remain local to the current browser/origin; export/import is the supported backup/device-transfer path.
 - Hand tracking and an in-VR settings menu are not implemented.
 
 ### Next direction
 
-Use the next Quest playtest as the primary gate before aggressively tuning timings or landmark scale. In particular: check whether limestone/crystal/deepstone hold durations feel tactile rather than tedious, whether **Y** works naturally for bench/resonator/forge interactions, whether the resonators are visually obvious enough to discover without UI babysitting, whether the resonant pick reads clearly in-hand, and whether both portal arrivals feel comfortable at headset scale.
+Do not add more content merely because the progression code exists. The next headset check should first answer whether the corrected opening now reads like a game: empty inventory, natural gathering, understandable bench construction, sensible Y interaction, and a clear reason to continue.
 
-If those fundamentals survive the headset test, build **The Old Quarry as the third gameplay beat** rather than immediately adding generic meters. Deepstone should gain a meaningful downstream use there—restoring machinery, opening a buried structure, or powering another original traversal mechanic—so the player's new capability changes what the world lets them do. A small original creature/ecology layer remains a good follow-up once the three-location progression spine feels solid.
+If that survives, build **The Old Quarry as the third gameplay beat**. Deepstone should gain a meaningful downstream use there—restoring machinery, opening a buried structure, or powering a traversal mechanic—so the new capability materially changes the world. A small original creature/ecology layer remains a strong follow-up once the three-location progression spine feels coherent.
 
 ---
 
