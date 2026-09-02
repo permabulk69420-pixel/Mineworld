@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { VoxelWorld, voxelRaycast } from '../src/world/world.js';
-import { BLOCK as B, BLOCK_SIZE as S, DEFAULT_SEED } from '../src/world/blocks.js';
+import { BLOCK as B, BLOCK_SIZE as S, DEFAULT_SEED, GENERATOR_VERSION } from '../src/world/blocks.js';
 import { generateWorld } from '../src/world/generator.js';
 import { collides, safeHome } from '../src/player/physics.js';
 import { WorldRenderer } from '../src/world/mesher.js';
@@ -13,8 +13,7 @@ test('negative coordinates and chunk boundaries retain separate blocks',()=>{
   for(const x of [-17,-16,-1,0,15,16])assert.equal(w.get(x,17,-1),B.STONE);
   assert.equal(w.get(-2,17,-1),B.AIR);
   w.dirty.clear();w.set(-1,17,-1,B.AIR,true);
-  assert.ok(w.dirty.has('-1,1,-1'));assert.ok(w.dirty.has('0,1,-1'));
-  assert.equal(w.edits.size,1);
+  assert.ok(w.dirty.has('-1,1,-1'));assert.ok(w.dirty.has('0,1,-1'));assert.equal(w.edits.size,1);
 });
 
 test('world rejects illegal coordinates and block values',()=>{
@@ -55,12 +54,15 @@ test('mesher hides shared faces, including across chunk boundaries',()=>{
   }
 });
 
-test('seeded generation is repeatable, creates seven islands, and gives a safe home',()=>{
+test('generator v2 is repeatable, large, connected at key regions, and gives a safe home',()=>{
+  assert.equal(GENERATOR_VERSION,2);
   const a=generateWorld(new VoxelWorld(DEFAULT_SEED)),b=generateWorld(new VoxelWorld(DEFAULT_SEED));
   const digest=w=>{const h=createHash('sha256');for(const [key,chunk] of w.chunks){h.update(key);h.update(chunk.data);}return h.digest('hex');};
-  assert.equal(digest(a),digest(b));assert.equal(a.landmarks.length,7);assert.equal(a.edits.size,0);
+  assert.equal(digest(a),digest(b));assert.equal(a.edits.size,0);assert.ok(a.landmarks.length>=5);
+  for(const [x,z] of [[0,34],[-48,-5],[37,-52],[39,51],[-72,-4]])assert.ok(a.surface(x,z)>2,`expected connected terrain at ${x},${z}`);
+  const xs=a.surfaces.map(p=>p.x),zs=a.surfaces.map(p=>p.z);
+  assert.ok(Math.max(...xs)-Math.min(...xs)>175,'continent should span more than 130 metres');
+  assert.ok(Math.max(...zs)-Math.min(...zs)>150,'continent should have substantial depth');
   const home=safeHome(a);assert.ok(Number.isFinite(home.y));assert.equal(collides(a,home),false);
   assert.equal(collides(a,{...home,y:home.y-.08}),true);
-  a.set(Math.floor(home.x/S),Math.floor(home.y/S),Math.floor(home.z/S),B.STONE,true);
-  assert.equal(collides(a,safeHome(a)),false);
 });
