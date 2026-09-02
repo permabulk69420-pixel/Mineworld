@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { VoxelWorld, voxelRaycast } from '../src/world/world.js';
 import { BLOCK as B, BLOCK_SIZE as S, DEFAULT_SEED, GENERATOR_VERSION } from '../src/world/blocks.js';
-import { generateWorld } from '../src/world/generator.js';
+import { generateWorld, LAKE } from '../src/world/generator.js';
 import { collides, safeHome } from '../src/player/physics.js';
 import { WorldRenderer } from '../src/world/mesher.js';
 
@@ -65,4 +65,16 @@ test('generator v2 is repeatable, large, connected at key regions, and gives a s
   assert.ok(Math.max(...zs)-Math.min(...zs)>150,'continent should have substantial depth');
   const home=safeHome(a);assert.ok(Number.isFinite(home.y));assert.equal(collides(a,home),false);
   assert.equal(collides(a,{...home,y:home.y-.08}),true);
+});
+
+test('lake basin is filled continuously to the same shoreline radius',()=>{
+  const w=generateWorld(new VoxelWorld(DEFAULT_SEED));let checked=0;
+  for(let x=LAKE.x-Math.ceil(LAKE.radius*1.2);x<=LAKE.x+Math.ceil(LAKE.radius*1.2);x++){
+    for(let z=LAKE.z-Math.ceil(LAKE.radius);z<=LAKE.z+Math.ceil(LAKE.radius);z++){
+      const distance=Math.hypot((x-LAKE.x)/1.2,z-LAKE.z);if(distance>=LAKE.radius-.35)continue;
+      const ground=w.surface(x,z);if(ground<=0||ground>LAKE.waterLevel)continue;
+      assert.equal(w.get(x,LAKE.waterLevel,z),B.WATER,`missing water at shoreline column ${x},${z}`);checked++;
+    }
+  }
+  assert.ok(checked>300,'expected broad lake coverage');
 });
