@@ -12,7 +12,7 @@ import { Environment } from './environment.js';
 import { Particles } from './particles.js';
 import { Sound } from './audio.js';
 import { UI } from './ui/ui.js';
-import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, ARCH, LUMEN_HOLLOW } from './game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, quarryRecipeReady, craftQuarryPick, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, HOME, ARCH, LUMEN_HOLLOW } from './game.js';
 import { readSave, createSave, writeSave, validateSave, readSettings, SETTINGS_KEY } from './save.js';
 
 const $=id=>document.getElementById(id);
@@ -60,7 +60,11 @@ async function boot(){
     }
   }
   function flight(){
-    if(!creative){ui.toast('Flight is disabled in Journey mode.');return;}
+    if(!creative){
+      const result=craftQuarryPick(journey,player.getBody());
+      if(result.ok)handleJourneyEvents([result.event]);else ui.toast(result.message,3600);
+      return;
+    }
     player.toggleFlight();ui.flight(player.flying);ui.toast(player.flying?'Flight on · Rise above the islands':'Back on your feet');markDirty();
   }
   function home(){player.home();if(player.flying&&!creative)player.toggleFlight();ui.flight(player.flying);markDirty();ui.toast('Welcome back to First Light.');}
@@ -117,6 +121,21 @@ async function boot(){
   scene.add(highlight);highlight.visible=false;
   const ghost=new THREE.Mesh(new THREE.BoxGeometry(S*.99,S*.99,S*.99),new THREE.MeshBasicMaterial({color:0xcde8a6,transparent:true,opacity:.19,depthWrite:false}));
   scene.add(ghost);ghost.visible=false;
+
+  // First Light field bench: a persistent in-world place for deliberate tool crafting.
+  const fieldBench=new THREE.Group();
+  fieldBench.position.set(HOME.x+2.4*S,world.spawn.y,HOME.z-2.1*S);
+  const benchWood=new THREE.MeshLambertMaterial({color:0x8d6446}),benchStone=new THREE.MeshLambertMaterial({color:0x8f9b95});
+  const benchTop=new THREE.Mesh(new THREE.BoxGeometry(S*2.25,S*.22,S*.92),benchWood);benchTop.position.y=S*.72;fieldBench.add(benchTop);
+  for(const x of [-S*.82,S*.82])for(const z of [-S*.27,S*.27]){
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(S*.18,S*.72,S*.18),benchWood);leg.position.set(x,S*.34,z);fieldBench.add(leg);
+  }
+  const benchSlab=new THREE.Mesh(new THREE.BoxGeometry(S*.66,S*.16,S*.48),benchStone);benchSlab.position.set(-S*.48,S*.92,0);benchSlab.rotation.y=.17;fieldBench.add(benchSlab);
+  const benchHandle=new THREE.Mesh(new THREE.CylinderGeometry(S*.055,S*.065,S*.78,7),benchWood);benchHandle.position.set(S*.34,S*1.08,0);benchHandle.rotation.z=-.62;fieldBench.add(benchHandle);
+  const benchHead=new THREE.Mesh(new THREE.BoxGeometry(S*.52,S*.16,S*.18),benchStone);benchHead.position.set(S*.57,S*1.31,0);benchHead.rotation.z=-.62;fieldBench.add(benchHead);
+  const benchGlow=new THREE.Mesh(new THREE.OctahedronGeometry(S*.16,0),new THREE.MeshBasicMaterial({color:0x6ccfbc,transparent:true,opacity:.32,depthWrite:false}));
+  benchGlow.position.set(0,S*1.08,-S*.2);fieldBench.add(benchGlow);scene.add(fieldBench);
+
   const portal=new THREE.Mesh(new THREE.PlaneGeometry(S*5.6,S*7.2),new THREE.MeshBasicMaterial({color:0x70f5df,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
   portal.position.set(ARCH.x,(generatedArchBase+4.7)*S,ARCH.z);portal.renderOrder=3;portal.visible=false;scene.add(portal);
   const portalRing=new THREE.Mesh(new THREE.RingGeometry(S*1.8,S*2.15,36),new THREE.MeshBasicMaterial({color:0xb8fff0,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
@@ -241,6 +260,10 @@ async function boot(){
       xr.updateTool(journey.tool,creative);
       xr.updateWrist(selected,player.flying,{creative,inventory:journey.inventory,objective,tool:journey.tool});
     }else{highlight.visible=ghost.visible=false;resetMining();}
+    const recipeReady=!creative&&quarryRecipeReady(journey);
+    benchGlow.material.color.set(recipeReady?0xffe38f:journey.tool==='quarry'?0x5c8f87:0x6ccfbc);
+    benchGlow.material.opacity=recipeReady?.88:journey.tool==='quarry'?.18:.32;
+    benchGlow.rotation.y=elapsed*.9;benchGlow.position.y=S*(1.08+(recipeReady?Math.sin(elapsed*3)*.05:0));
     portal.visible=portalRing.visible=!creative&&journey.archAwake;
     hollowWaystone.visible=!creative&&journey.lumenReached;
     if(portal.visible){
@@ -271,7 +294,7 @@ async function boot(){
   try{
     const available=!!navigator.xr&&await navigator.xr.isSessionSupported('immersive-vr');
     vrButton.disabled=!available;vrButton.textContent='Enter VR';
-    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, make tools, awaken the arch'):'Open in your Quest browser to step inside.';
+    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, craft tools, awaken the arch'):'Open in your Quest browser to step inside.';
   }catch{vrButton.disabled=true;vrButton.textContent='Enter VR';}
   vrButton.addEventListener('click',async()=>{
     if(renderer.xr.isPresenting)return;vrButton.disabled=true;
