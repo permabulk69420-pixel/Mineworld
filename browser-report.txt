@@ -1,11 +1,28 @@
 Journey default: field-tool objective is active and creative flight is disabled.
 Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.
 Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.
-Desktop diagnostics: 1 FPS
-32 draw calls · 16,485 triangles
+MINEWORLD
+Lumen Hollow · Journey
+Saved on this device
+☰
+Meadow
+Lumen crystal
+1
+2
+3
+4
+5
+6
+7
+8
+9
+MINE LMB · BUILD RMB · MENU ESC
+5 FPS
+47 draw calls · 18,853 triangles
 187 chunks · 0 block edits
-XYZ 47.6 / 41.4 / -55.1
+XYZ 47.6 / 37.5 / -55.1
 Yaw 0° · Pitch -9°
 Quarry pick · Wake Hollow resonators · 2/3 · feed lumen with Y · Seed 734921
-Actual immersive Quest sessions and headset performance require a device playtest.
+page.waitForFunction: Timeout 12000ms exceeded.
+    at /home/runner/work/Mineworld/Mineworld/tests/browser-smoke.mjs:130:14
 Browser errors:
