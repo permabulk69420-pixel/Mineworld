@@ -12,6 +12,12 @@ export function stickAxes(gamepad) {
   return {x:dead(axes[start]),y:dead(axes[start+1])};
 }
 
+export function locomotionInput(mode,axes,triggerPressed=false){
+  return mode==='teleport'
+    ? {forward:0,strafe:0,teleport:Boolean(triggerPressed)}
+    : {forward:-axes.y,strafe:axes.x,teleport:false};
+}
+
 export class XRControls {
   constructor(renderer,player,world,scene,callbacks) {
     this.renderer=renderer;this.player=player;this.world=world;this.callbacks=callbacks;
@@ -27,7 +33,6 @@ export class XRControls {
       controller.addEventListener('disconnected',()=>{controller.userData.source=null;grip.userData.hand=null;this.previous.clear();});
       const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:0xc4fff0,transparent:true,opacity:0.38}));
       beam.scale.z=6;controller.add(beam);
-      // No decorative hand tool. A visible tool returns only when it physically participates.
       this.controllers.push({controller,grip,beam});
     }
     this.wristCanvas=document.createElement('canvas');this.wristCanvas.width=512;this.wristCanvas.height=256;
@@ -48,10 +53,7 @@ export class XRControls {
       this.preferenceRaw=raw;
       try{
         const value=JSON.parse(raw);
-        this.preferences={
-          locomotion:value.locomotion==='teleport'?'teleport':'stick',
-          wrist:value.wrist==='visible'?'visible':'hidden',
-        };
+        this.preferences={locomotion:value.locomotion==='teleport'?'teleport':'stick',wrist:value.wrist==='visible'?'visible':'hidden'};
       }catch{this.preferences={locomotion:'stick',wrist:'hidden'};}
     }
     return this.preferences;
@@ -88,7 +90,7 @@ export class XRControls {
   }
 
   sample(dt,turning){
-    const prefs=this.syncWrist(),teleportMode=prefs.locomotion==='teleport';
+    const prefs=this.syncWrist();
     const result={forward:0,strafe:0,vertical:0,jump:false,sprint:false,mine:false,build:false};
     let leftTrigger=false;
     for(const {controller,grip,beam} of this.controllers){
@@ -97,8 +99,8 @@ export class XRControls {
       beam.visible=hand==='right';
       if(hand==='left'){
         if(this.wrist.parent!==grip)grip.add(this.wrist);
-        if(!teleportMode){result.forward=-axes.y;result.strafe=axes.x;}
-        leftTrigger=teleportMode&&down(0);
+        const move=locomotionInput(prefs.locomotion,axes,down(0));
+        result.forward=move.forward;result.strafe=move.strafe;leftTrigger=move.teleport;
         if(this.edge(hand,1,down(1)))this.callbacks.cycle(-1);
         if(this.edge(hand,4,down(4)))this.callbacks.cycle(1);
         if(this.edge(hand,5,down(5))){if(this.creative)this.callbacks.flight();else this.toggleWrist();}
@@ -110,14 +112,14 @@ export class XRControls {
         if(Math.abs(axes.x)<0.25)this.snapReady=true;
       }
     }
-    if(teleportMode&&leftTrigger)this.updateTeleport();
-    else if(teleportMode&&this.teleportHeld){
+    if(prefs.locomotion==='teleport'&&leftTrigger)this.updateTeleport();
+    else if(prefs.locomotion==='teleport'&&this.teleportHeld){
       if(this.destination&&this.player.teleport(this.destination))this.callbacks.teleport();
       this.arc.visible=this.marker.visible=false;this.destination=null;
-    }else if(!teleportMode){
+    }else if(prefs.locomotion!=='teleport'){
       this.arc.visible=this.marker.visible=false;this.destination=null;
     }
-    this.teleportHeld=teleportMode&&leftTrigger;
+    this.teleportHeld=prefs.locomotion==='teleport'&&leftTrigger;
     if(this.teleportHeld){result.forward=result.strafe=0;result.mine=result.build=false;}
     return result;
   }
