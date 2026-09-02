@@ -47,7 +47,15 @@ export function generateWorld(world, version=GENERATOR_VERSION) {
       const caveA=y<top-4&&y>bottom+3&&Math.hypot((x+18)*.42,y-24)<4.4&&z>-30&&z<34;
       const caveB=y<top-5&&y>bottom+4&&Math.hypot((z+31)*.45,y-29)<4.8&&x>8&&x<65;
       if(caveA||caveB)continue;
-      let id=y===top?B.GRASS:y>=top-3?B.SOIL:y<top-14?B.BASALT:B.STONE;
+      const depth=top-y;
+      let id;
+      if(depth===0) id=B.GRASS;
+      else if(y<top-14) id=B.BASALT;
+      else {
+        const loamPocket=noise2(x*.075+depth*.13,z*.075-depth*.09,seed+311)+noise2(x*.17,z*.11,seed+912)*.45;
+        id=depth<=1&&loamPocket>.08?B.SOIL:B.STONE;
+        if(depth>1&&depth<7&&loamPocket>.72)id=B.SOIL;
+      }
       if(lakeDistance<LAKE.radius+2&&y>=top-1)id=B.SAND;
       if(y===top&&(top>43||Math.abs(noise2(x*.08,z*.08,seed+812))>.78)&&hash(x,y,z,seed+12)>.46)id=B.STONE;
       world.set(x,y,z,id);
@@ -55,8 +63,6 @@ export function generateWorld(world, version=GENERATOR_VERSION) {
     if(lakeDistance<LAKE.radius&&top<LAKE.waterLevel){
       for(let y=top+1;y<=LAKE.waterLevel;y++) world.set(x,y,z,B.WATER);
     }
-    // Natural vegetation is no longer voxel WOOD/LEAVES. Surface dressing is rendered
-    // as procedural non-cubic flora so the landscape does not inherit Minecraft's forms.
     world.surfaces.push({x,y:top,z});
   }
 
@@ -74,8 +80,6 @@ export function generateWorld(world, version=GENERATOR_VERSION) {
     previousZ=targetZ;
   }
 
-  // Distinct natural rock ribs create readable silhouettes around the starting country.
-  // They are geology rather than collectible quest props and stay deliberately sparse.
   for(const [cx,cz,length,height,angle] of [
     [-51,-12,15,10,.32],[61,-17,18,13,-.5],[-62,42,13,9,.72],[15,-58,17,12,-.18]
   ]){
