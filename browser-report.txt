@@ -2,7 +2,7 @@ Journey default: empty pack, no exposed creative palette, player-built bench obj
 Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.
 Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.
 Deepstone forge passage: runtime traversal reached Old Quarry, persisted discovery, and rendered the return waystone.
-Desktop diagnostics: 3 FPS
+Desktop diagnostics: 6 FPS
 102 draw calls · 38,941 triangles
 187 chunks · 0 block edits
 XYZ 40.1 / 29.3 / -20.6
