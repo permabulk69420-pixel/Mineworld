@@ -90,18 +90,30 @@ export function harvestInfo(journey, id) {
   return { allowed:true, duration, message:'' };
 }
 
+export function quarryRecipeReady(journey) {
+  return journey.tool !== TOOL.QUARRY
+    && (journey.inventory[BLOCK.WOOD] || 0) >= REQUIRED_WOOD
+    && (journey.inventory[BLOCK.STONE] || 0) >= REQUIRED_STONE;
+}
+
+/** The first recipe is crafted deliberately at the field bench, never by proximity alone. */
+export function craftQuarryPick(journey, body) {
+  if (journey.tool === TOOL.QUARRY) return { ok:false, message:'Your quarry pick is already ready.' };
+  const nearBench = Math.hypot(body.x - HOME.x, body.z - HOME.z) < 6.5;
+  if (!nearBench) return { ok:false, message:'Craft the quarry pick at the First Light field bench.' };
+  const wood = journey.inventory[BLOCK.WOOD] || 0;
+  const stone = journey.inventory[BLOCK.STONE] || 0;
+  if (wood < REQUIRED_WOOD || stone < REQUIRED_STONE) {
+    return { ok:false, message:`Quarry pick needs cedar ${wood}/${REQUIRED_WOOD} · limestone ${stone}/${REQUIRED_STONE}.` };
+  }
+  journey.inventory[BLOCK.WOOD] -= REQUIRED_WOOD;
+  journey.inventory[BLOCK.STONE] -= REQUIRED_STONE;
+  journey.tool = TOOL.QUARRY;
+  return { ok:true, event:'tool-crafted' };
+}
+
 export function updateJourney(journey, body) {
   const events = [];
-  if (journey.tool !== TOOL.QUARRY) {
-    const wood = journey.inventory[BLOCK.WOOD] || 0;
-    const stone = journey.inventory[BLOCK.STONE] || 0;
-    if (wood >= REQUIRED_WOOD && stone >= REQUIRED_STONE && Math.hypot(body.x - HOME.x, body.z - HOME.z) < 6.5) {
-      journey.inventory[BLOCK.WOOD] -= REQUIRED_WOOD;
-      journey.inventory[BLOCK.STONE] -= REQUIRED_STONE;
-      journey.tool = TOOL.QUARRY;
-      events.push('tool-crafted');
-    }
-  }
   if (journey.tool === TOOL.QUARRY && !journey.archAwake && (journey.inventory[BLOCK.CRYSTAL] || 0) >= REQUIRED_CRYSTALS) {
     const distance = Math.hypot(body.x - ARCH.x, body.z - ARCH.z);
     if (distance < 5.5) {
@@ -133,7 +145,7 @@ export function journeyObjective(journey) {
     const wood = journey.inventory[BLOCK.WOOD] || 0;
     const stone = journey.inventory[BLOCK.STONE] || 0;
     if (wood < REQUIRED_WOOD || stone < REQUIRED_STONE) return `Quarry pick · cedar ${wood}/${REQUIRED_WOOD} · limestone ${stone}/${REQUIRED_STONE}`;
-    return 'Return to the First Light lookout to make a quarry pick';
+    return 'First Light field bench · press Y to craft quarry pick';
   }
   if (!journey.archAwake) {
     const crystals = journey.inventory[BLOCK.CRYSTAL] || 0;
@@ -144,4 +156,4 @@ export function journeyObjective(journey) {
   return 'Lumen Hollow reached · return waystone active · explore';
 }
 
-export { REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, ARCH, LUMEN_HOLLOW };
+export { REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, HOME, ARCH, LUMEN_HOLLOW };
