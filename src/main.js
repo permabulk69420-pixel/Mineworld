@@ -28,6 +28,9 @@ async function boot(){
   let mineKey='',mineStarted=0,lastBlockedMine=-10,lastPortal=-10;
   const params=new URLSearchParams(location.search),desktopTest=params.has('test'),creative=params.get('creative')==='1';
   const journey=createJourney(saved.data?.journey);
+  if(!creative&&!canPlace(journey,PALETTE[selected])){
+    const available=PALETTE.findIndex(id=>canPlace(journey,id));if(available>=0)selected=available;
+  }
   const canvas=$('world');
   renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;
@@ -48,7 +51,14 @@ async function boot(){
   }
   function markDirty(){dirty=true;if(!writable){ui.saved(saved.message);return;}ui.saved('Saving…');clearTimeout(saveTimer);saveTimer=setTimeout(persist,900);}
   function select(index){selected=(index+PALETTE.length)%PALETTE.length;ui.select(selected);if(started)markDirty();}
-  function cycle(amount){select(selected+amount);}
+  function cycle(amount){
+    if(creative){select(selected+amount);return;}
+    const direction=Math.sign(amount)||1;
+    for(let step=1;step<=PALETTE.length;step++){
+      const index=(selected+direction*step+PALETTE.length*2)%PALETTE.length;
+      if(canPlace(journey,PALETTE[index])){select(index);return;}
+    }
+  }
   function flight(){
     if(!creative){ui.toast('Flight is disabled in Journey mode.');return;}
     player.toggleFlight();ui.flight(player.flying);ui.toast(player.flying?'Flight on · Rise above the islands':'Back on your feet');markDirty();
@@ -165,15 +175,20 @@ async function boot(){
     if(state.build&&placement&&elapsed-lastBuild>.22){
       const {x,y,z}=placement,id=PALETTE[selected];
       if(!creative&&!spendBlock(journey,id)){ui.toast(`No ${BLOCKS[id].name.toLowerCase()} in your pack.`);return;}
-      if(world.set(x,y,z,id,true)){sound.play('build',id===BLOCK.CRYSTAL);lastBuild=elapsed;markDirty();aim();}
-      else if(!creative)refundBlock(journey,id);
+      if(world.set(x,y,z,id,true)){
+        sound.play('build',id===BLOCK.CRYSTAL);lastBuild=elapsed;markDirty();
+        if(!creative&&!canPlace(journey,id))cycle(1);
+        aim();
+      }else if(!creative)refundBlock(journey,id);
     }
   }
 
   function handleJourneyEvents(events){
     for(const event of events){
       if(event==='tool-crafted'){
-        sound.play('build');xr.updateTool(journey.tool,false);ui.toast('Quarry pick made. Lumen crystal can now be harvested.',6000);markDirty();
+        sound.play('build');xr.updateTool(journey.tool,false);
+        if(!canPlace(journey,PALETTE[selected]))cycle(1);
+        ui.toast('Quarry pick made. Lumen crystal can now be harvested.',6000);markDirty();
       }
       if(event==='arch-awake'){
         sound.play('build',true);ui.toast('The Old Arch wakes. Step into the light.',6500);markDirty();
