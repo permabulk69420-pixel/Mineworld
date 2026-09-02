@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#142a31" />
-  <meta name="description" content="A solitary VR voxel world above the clouds. Explore a large First Light landscape, gather real materials, and build in your Meta Quest headset." />
+  <meta name="description" content="Mineworld is a VR exploration world in active development for Meta Quest. First Light is being rebuilt around a distinct landscape, materials, and procedural flora." />
   <title>Mineworld · First Light</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23b5db94' d='M16 2 30 10 16 18 2 10Z'/%3E%3Cpath fill='%235d987f' d='m2 10 14 8v14L2 24Z'/%3E%3Cpath fill='%23385559' d='m30 10-14 8v14l14-8Z'/%3E%3C/svg%3E" />
 </head>
@@ -16,15 +16,15 @@
   </header>
   <main id="welcome">
     <section id="welcome-card" class="panel" aria-labelledby="welcome-title">
-      <div class="eyebrow"><span></span> FOUNDATION BUILD · FIRST LIGHT</div>
+      <div class="eyebrow"><span></span> WORLD STUDY · FIRST LIGHT</div>
       <h1 id="welcome-title">Make the world<br>worth staying in.</h1>
-      <p id="welcome-copy">Explore the land. Gather what you find.<br>No quest props pretending to be gameplay.</p>
+      <p id="welcome-copy">Explore the land while First Light finds its own shape.<br>World first. Gameplay systems later.</p>
       <div class="start-actions"><button id="vr-button" class="primary" disabled>Checking VR…</button><button id="play-button" class="text-button" disabled hidden><span id="play-label">Growing the world…</span><span aria-hidden="true">↗</span></button></div>
       <p id="vr-note" class="small" hidden>Open in your Quest browser to step inside.</p>
       <button id="controls-button" class="text-button">Controls & settings <span aria-hidden="true">↗</span></button>
-      <div class="world-meta"><span class="status-dot"></span> JOURNEY · v0.3 FOUNDATION <span class="meta-divider">/</span> <span id="world-seed">SEED 734921</span></div>
+      <div class="world-meta"><span class="status-dot"></span> JOURNEY · v0.4 WORLD STUDY <span class="meta-divider">/</span> <span id="world-seed">SEED 734921</span></div>
     </section>
-    <div class="scene-caption"><span class="fine-line"></span><div>FIRST LIGHT<span>THE LARGE-WORLD FOUNDATION</span></div></div>
+    <div class="scene-caption"><span class="fine-line"></span><div>FIRST LIGHT<span>THE WORLD-IDENTITY PASS</span></div></div>
   </main>
   <section id="settings-panel" class="panel settings-panel" aria-labelledby="settings-title" hidden>
     <div class="panel-heading"><h2 id="settings-title">Make yourself at home.</h2><button id="close-settings" class="icon-button" aria-label="Close settings">×</button></div>
@@ -32,7 +32,7 @@
     <details id="desktop-test-controls" hidden><summary>Desktop test controls</summary><dl class="control-list"><dt>Move / look</dt><dd>WASD / mouse</dd><dt>Mine / place</dt><dd>Left / right click</dd><dt>Material</dt><dd>1–9 / scroll</dd><dt>Creative flight</dt><dd>F</dd><dt>Creative vertical move</dt><dd>Space / Shift</dd><dt>Home / menu / diagnostics</dt><dd>R / Esc / F3</dd></dl></details>
     <div class="preferences"><label>VR locomotion<select id="locomotion"><option value="stick">Stick movement</option><option value="teleport">Teleport only</option></select></label><label>VR turning<select id="turning"><option value="smooth">Smooth</option><option value="snap">Snap · 30°</option></select></label><label>Wrist display<select id="wrist"><option value="hidden">Hidden by default</option><option value="visible">Visible by default</option></select></label><label>Detail<select id="quality"><option value="balanced">Balanced</option><option value="high">High</option></select></label><label class="sound-setting">Sound<input type="checkbox" id="sound" checked /></label></div>
     <div class="save-actions"><button id="export-button" class="secondary">Export world</button><button id="import-button" class="secondary">Import world</button><button id="home-button" class="secondary">Return home</button><input id="import-file" type="file" accept=".json,application/json" hidden /></div>
-    <p class="small save-note">Stick movement is the default. Teleport is optional rather than active at the same time. The v0.3 foundation uses a separate save slot from the earlier prototype.</p>
+    <p class="small save-note">Stick movement is the default and teleport is optional. The v0.4 visual-reset world uses a new save slot; both earlier First Light and prototype saves remain preserved.</p>
   </section>
   <div id="crosshair" aria-hidden="true" hidden><i></i><b></b></div>
   <div id="target-name" hidden></div>
