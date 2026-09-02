@@ -50,6 +50,7 @@ try{
   assert.match(await page.locator('#debug').textContent(),/Field bench · cedar 0\/3 · limestone 0\/2/);
   assert.equal(await page.locator('#hotbar button:visible').count(),0,'Journey must not expose unowned build materials');
   assert.equal(await page.locator('#selected-label').textContent(),'Hands · empty pack');
+  await page.screenshot({path:resolve(out,'journey-start.jpg'),type:'jpeg',quality:90});
   notes.push('Journey default: empty pack, no exposed creative palette, player-built bench objective, and creative flight disabled.');
 
   // Creative mode stays available as an explicit development harness so visual regression
