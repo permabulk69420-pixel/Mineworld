@@ -37,9 +37,23 @@ try{
   await page.screenshot({path:resolve(out,'skyreach-title.jpg'),type:'jpeg',quality:90});
   assert.equal(await page.locator('#play-button').isVisible(),false,'The public entry is VR only');
   assert.equal(await page.locator('#touch-controls').count(),0);
+
+  // Journey is the product default. The desktop harness only verifies shared game behavior.
   await page.setViewportSize({width:1024,height:768});
   await page.goto(url+'?test=1');await ready(page);
-  await page.getByRole('button',{name:'Start desktop test'}).click();
+  await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
+  await page.waitForFunction(()=>!!document.pointerLockElement);
+  await page.keyboard.press('F3');
+  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Field tool'));
+  await page.keyboard.press('f');await pause(250);
+  assert.doesNotMatch(await page.locator('#debug').textContent(),/Flying/,'Journey mode must not enable flight');
+  assert.match(await page.locator('#debug').textContent(),/Quarry pick · cedar 0\/4 · limestone 0\/6/);
+  notes.push('Journey default: field-tool objective is active and creative flight is disabled.');
+
+  // Creative mode stays available as an explicit development harness so visual regression
+  // can reach arbitrary geometry without weakening the normal game rules.
+  await page.goto(url+'?test=1&creative=1');await ready(page);
+  await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
   await page.waitForFunction(()=>!!document.pointerLockElement);
   await page.keyboard.press('F3');
   await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Grounded'));
@@ -47,6 +61,7 @@ try{
   await page.screenshot({path:resolve(out,'first-light.jpg'),type:'jpeg',quality:90});
   await page.keyboard.press('8');assert.equal(await page.getByRole('button',{name:'Lumen crystal',exact:true}).getAttribute('aria-pressed'),'true');
   await page.keyboard.press('f');await page.keyboard.down('Space');await pause(450);await page.keyboard.up('Space');
+  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Flying'));
   // Look down from flight so mining and rebuilding cannot place the player in the edited cell.
   // CDP's absolute mouse coordinates can report zero relative motion while locked.
   // Supply a relative movement event through the same document input handler.
@@ -73,7 +88,7 @@ try{
   const download=await downloadPromise;await download.saveAs(resolve(out,'world-export.json'));
   const exported=JSON.parse(await readFile(resolve(out,'world-export.json'),'utf8'));
   assert.deepEqual(exported.edits,stored.edits);assert.equal(exported.seed,stored.seed);
-  notes.push('Desktop test mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.');
+  notes.push('Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.');
   notes.push(`Desktop diagnostics: ${await page.locator('#debug').textContent()}`);
 
   assert.deepEqual(errors,[],'No browser runtime or shader errors');
