@@ -26,11 +26,12 @@ export function createJourney(saved = null) {
   };
 }
 
-export function snapshotJourney(journey) {
+export function snapshotJourney(journey = null) {
+  const value = journey || createJourney();
   return {
-    inventory: { ...journey.inventory },
-    archAwake: Boolean(journey.archAwake),
-    lumenReached: Boolean(journey.lumenReached),
+    inventory: { ...value.inventory },
+    archAwake: Boolean(value.archAwake),
+    lumenReached: Boolean(value.lumenReached),
   };
 }
 
