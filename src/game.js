@@ -1,8 +1,5 @@
 import { BLOCK, PALETTE, BLOCK_SIZE } from './world/blocks.js';
 
-const STARTING_INVENTORY = Object.freeze({
-  [BLOCK.PLANKS]: 8,
-});
 const INVENTORY_IDS = Object.freeze([...PALETTE, BLOCK.BASALT]);
 
 const HOME = Object.freeze({ x: 1.5 * BLOCK_SIZE, z: 25.5 * BLOCK_SIZE });
@@ -15,25 +12,41 @@ const HOLLOW_RESONATORS = Object.freeze([
   Object.freeze({ x: 66.5 * BLOCK_SIZE, z: -76.5 * BLOCK_SIZE }),
   Object.freeze({ x: 68.5 * BLOCK_SIZE, z: -85.5 * BLOCK_SIZE }),
 ]);
-const REQUIRED_WOOD = 4;
-const REQUIRED_STONE = 6;
+const BENCH_WOOD = 3;
+const BENCH_STONE = 2;
+const REQUIRED_WOOD = 2;
+const REQUIRED_STONE = 4;
 const REQUIRED_CRYSTALS = 6;
 const MAX_STACK = 99;
 
 export const TOOL = Object.freeze({ HAND: 'hand', QUARRY: 'quarry', RESONANT: 'resonant' });
 
+function validBench(value) {
+  return value && Number.isFinite(value.x) && Number.isFinite(value.z)
+    && Math.abs(value.x) < 90 && Math.abs(value.z) < 90
+    ? { x:value.x, z:value.z } : null;
+}
+
+function legacyStarterOnly(saved) {
+  if (!saved || saved.bench || saved.archAwake || saved.lumenReached || saved.deepstoneReached || saved.quarryReached) return false;
+  if (saved.tool && saved.tool !== TOOL.HAND) return false;
+  const inventory=saved.inventory||{};
+  return INVENTORY_IDS.every(id=>id===BLOCK.PLANKS ? (inventory[id]??0)===8 : (inventory[id]??0)===0);
+}
+
 export function createJourney(saved = null) {
   const inventory = {};
   for (const id of INVENTORY_IDS) inventory[id] = 0;
-  Object.assign(inventory, STARTING_INVENTORY);
   if (saved?.inventory) {
     for (const id of INVENTORY_IDS) {
       const value = saved.inventory[id];
       if (Number.isInteger(value) && value >= 0) inventory[id] = Math.min(MAX_STACK, value);
     }
   }
-  // Saves created by the first Journey build could already have activated the arch
-  // before tool progression existed. Treat that as proof the quarry tool was earned.
+  // The first Journey prototype gifted eight planks before the player did anything.
+  // Convert only that exact untouched starter state to the new empty-pack opening.
+  if (legacyStarterOnly(saved)) inventory[BLOCK.PLANKS]=0;
+
   const resonant = saved?.tool === TOOL.RESONANT || Boolean(saved?.deepstoneReached) || Boolean(saved?.quarryReached);
   const tool = resonant ? TOOL.RESONANT
     : saved?.tool === TOOL.QUARRY || saved?.archAwake || saved?.lumenReached ? TOOL.QUARRY : TOOL.HAND;
@@ -42,6 +55,7 @@ export function createJourney(saved = null) {
   return {
     inventory,
     tool,
+    bench: validBench(saved?.bench),
     archAwake: Boolean(saved?.archAwake),
     lumenReached: Boolean(saved?.lumenReached),
     resonators,
@@ -56,6 +70,7 @@ export function snapshotJourney(journey = null) {
   return {
     inventory: Object.fromEntries(INVENTORY_IDS.map(id=>[id,Math.max(0,Math.min(MAX_STACK,Number.isInteger(value.inventory?.[id])?value.inventory[id]:0))])),
     tool,
+    bench: validBench(value.bench),
     archAwake: Boolean(value.archAwake),
     lumenReached: Boolean(value.lumenReached),
     resonators: Array.from({ length:3 },(_,i)=>Boolean(value.resonators?.[i])),
@@ -112,17 +127,37 @@ export function harvestInfo(journey, id) {
   return { allowed:true, duration, message:'' };
 }
 
+export function benchRecipeReady(journey) {
+  return !journey.bench
+    && (journey.inventory[BLOCK.WOOD] || 0) >= BENCH_WOOD
+    && (journey.inventory[BLOCK.STONE] || 0) >= BENCH_STONE;
+}
+
+export function buildFieldBench(journey, body, yaw=0) {
+  if (journey.bench) return { ok:false, message:'Your field bench is already established.' };
+  if (Math.hypot(body.x-HOME.x,body.z-HOME.z)>25) return { ok:false, message:'Establish your first field bench somewhere on First Light.' };
+  const wood=journey.inventory[BLOCK.WOOD]||0,stone=journey.inventory[BLOCK.STONE]||0;
+  if (wood<BENCH_WOOD || stone<BENCH_STONE) {
+    return { ok:false, message:`Field bench needs cedar ${wood}/${BENCH_WOOD} · limestone ${stone}/${BENCH_STONE}.` };
+  }
+  journey.inventory[BLOCK.WOOD]-=BENCH_WOOD;
+  journey.inventory[BLOCK.STONE]-=BENCH_STONE;
+  const distance=1.55;
+  journey.bench={x:body.x-Math.sin(yaw)*distance,z:body.z-Math.cos(yaw)*distance};
+  return { ok:true, event:'bench-built' };
+}
+
 export function quarryRecipeReady(journey) {
-  return journey.tool === TOOL.HAND
+  return Boolean(journey.bench) && journey.tool === TOOL.HAND
     && (journey.inventory[BLOCK.WOOD] || 0) >= REQUIRED_WOOD
     && (journey.inventory[BLOCK.STONE] || 0) >= REQUIRED_STONE;
 }
 
-/** The first recipe is crafted deliberately at the field bench, never by proximity alone. */
 export function craftQuarryPick(journey, body) {
   if (journey.tool !== TOOL.HAND) return { ok:false, message:'Your quarry pick is already ready.' };
-  const nearBench = Math.hypot(body.x - HOME.x, body.z - HOME.z) < 6.5;
-  if (!nearBench) return { ok:false, message:'Craft the quarry pick at the First Light field bench.' };
+  if (!journey.bench) return { ok:false, message:'Build a field bench first.' };
+  const nearBench = Math.hypot(body.x - journey.bench.x, body.z - journey.bench.z) < 2.4;
+  if (!nearBench) return { ok:false, message:'Return to your field bench to make the quarry pick.' };
   const wood = journey.inventory[BLOCK.WOOD] || 0;
   const stone = journey.inventory[BLOCK.STONE] || 0;
   if (wood < REQUIRED_WOOD || stone < REQUIRED_STONE) {
@@ -152,9 +187,9 @@ function nearestDormantResonator(journey, body) {
   return distance < 1.7 ? nearest : -1;
 }
 
-/** Journey's context action: craft at First Light, feed Hollow resonators, then temper the tool. */
-export function useJourney(journey, body) {
-  if (journey.tool === TOOL.HAND) return craftQuarryPick(journey, body);
+/** Journey's context action: establish a bench, craft, feed resonators, then temper the tool. */
+export function useJourney(journey, body, yaw=0) {
+  if (journey.tool === TOOL.HAND) return journey.bench ? craftQuarryPick(journey, body) : buildFieldBench(journey, body, yaw);
   if (!journey.lumenReached) return { ok:false, message:'There is nothing here to use yet.' };
   if (journey.tool === TOOL.QUARRY) {
     const index=nearestDormantResonator(journey,body);
@@ -217,11 +252,16 @@ export function quarryReturnPortalActive(journey, body) {
 }
 
 export function journeyObjective(journey) {
+  if (journey.tool === TOOL.HAND && !journey.bench) {
+    const wood=journey.inventory[BLOCK.WOOD]||0,stone=journey.inventory[BLOCK.STONE]||0;
+    if (wood<BENCH_WOOD || stone<BENCH_STONE) return `Field bench · cedar ${wood}/${BENCH_WOOD} · limestone ${stone}/${BENCH_STONE}`;
+    return 'Choose a spot on First Light · press Y to build field bench';
+  }
   if (journey.tool === TOOL.HAND) {
     const wood = journey.inventory[BLOCK.WOOD] || 0;
     const stone = journey.inventory[BLOCK.STONE] || 0;
     if (wood < REQUIRED_WOOD || stone < REQUIRED_STONE) return `Quarry pick · cedar ${wood}/${REQUIRED_WOOD} · limestone ${stone}/${REQUIRED_STONE}`;
-    return 'First Light field bench · press Y to craft quarry pick';
+    return 'Return to your field bench · press Y to craft quarry pick';
   }
   if (!journey.archAwake) {
     const crystals = journey.inventory[BLOCK.CRYSTAL] || 0;
@@ -239,4 +279,4 @@ export function journeyObjective(journey) {
   return 'The Old Quarry reached · passage back to Lumen Hollow active';
 }
 
-export { REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, HOME, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS, OLD_QUARRY };
+export { BENCH_WOOD, BENCH_STONE, REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, HOME, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS, OLD_QUARRY };
