@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { VoxelWorld } from '../src/world/world.js';
 import { BLOCK as B, DEFAULT_SEED } from '../src/world/blocks.js';
 import { createJourney, TOOL } from '../src/game.js';
-import { createSave, validateSave, writeSave, readSave, SAVE_KEY, LEGACY_SAVE_KEY } from '../src/save.js';
+import { createSave, validateSave, writeSave, readSave, readSettings, SAVE_KEY, LEGACY_SAVE_KEY, SETTINGS_KEY } from '../src/save.js';
 
 const player={snapshot:()=>({x:1,y:28,z:3,yaw:0,pitch:0,flying:false})};
 function memory(){const map=new Map();return {getItem:key=>map.get(key)??null,setItem:(key,value)=>map.set(key,value)};}
@@ -29,6 +29,15 @@ test('the v1 prototype save remains untouched when the v2 world starts',()=>{
   const state=readSave(storage);
   assert.equal(state.data,null);assert.equal(state.writable,true);assert.match(state.message,/preserved/);
   assert.equal(storage.getItem(LEGACY_SAVE_KEY),'old-prototype-world');assert.equal(storage.getItem(SAVE_KEY),null);
+});
+
+test('VR settings default to stick movement and a hidden wrist, with teleport opt-in',()=>{
+  const storage=memory();
+  assert.deepEqual(readSettings(storage),{turning:'smooth',locomotion:'stick',wrist:'hidden',sound:true,quality:'balanced'});
+  storage.setItem(SETTINGS_KEY,JSON.stringify({turning:'snap',locomotion:'teleport',wrist:'visible',sound:false,quality:'high'}));
+  assert.deepEqual(readSettings(storage),{turning:'snap',locomotion:'teleport',wrist:'visible',sound:false,quality:'high'});
+  storage.setItem(SETTINGS_KEY,JSON.stringify({locomotion:'nonsense',wrist:'nonsense'}));
+  assert.equal(readSettings(storage).locomotion,'stick');assert.equal(readSettings(storage).wrist,'hidden');
 });
 
 test('corrupt or future-version v2 saves are preserved instead of silently overwritten',()=>{
