@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BLOCK, BLOCK_SIZE } from '../src/world/blocks.js';
-import { createJourney, collectBlock, canPlace, spendBlock, harvestInfo, quarryRecipeReady, craftQuarryPick, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, quarryForgePortalActive, quarryReturnPortalActive, journeyObjective, TOOL, HOLLOW_RESONATORS, HOLLOW_FORGE, OLD_QUARRY } from '../src/game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, harvestInfo, benchRecipeReady, quarryRecipeReady, craftQuarryPick, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, quarryForgePortalActive, quarryReturnPortalActive, journeyObjective, TOOL, HOLLOW_RESONATORS, HOLLOW_FORGE, OLD_QUARRY } from '../src/game.js';
 
-test('Journey mode gathers finite materials and spends them when building', () => {
+test('Journey starts with an empty pack and only gathered materials become buildable', () => {
   const journey = createJourney();
-  assert.equal(journey.inventory[BLOCK.PLANKS], 8);
+  assert.equal(journey.inventory[BLOCK.PLANKS], 0);
   assert.equal(journey.inventory[BLOCK.STONE], 0);
+  assert.equal(journey.bench, null);
+  assert.equal(canPlace(journey, BLOCK.PLANKS), false);
   collectBlock(journey, BLOCK.STONE);
   assert.equal(canPlace(journey, BLOCK.STONE), true);
   assert.equal(spendBlock(journey, BLOCK.STONE), true);
@@ -14,25 +16,43 @@ test('Journey mode gathers finite materials and spends them when building', () =
   assert.equal(spendBlock(journey, BLOCK.STONE), false);
 });
 
-test('the first quarry pick requires a deliberate craft at the First Light field bench', () => {
+test('the player must establish a field bench before crafting the quarry pick', () => {
   const journey = createJourney();
+  const home={x:1.5*BLOCK_SIZE,z:25.5*BLOCK_SIZE};
   assert.equal(journey.tool, TOOL.HAND);
   assert.equal(harvestInfo(journey, BLOCK.CRYSTAL).allowed, false);
-  for (let i = 0; i < 4; i++) collectBlock(journey, BLOCK.WOOD);
+  assert.match(journeyObjective(journey), /Field bench/);
+  for (let i = 0; i < 5; i++) collectBlock(journey, BLOCK.WOOD);
   for (let i = 0; i < 6; i++) collectBlock(journey, BLOCK.STONE);
-  assert.equal(quarryRecipeReady(journey), true);
-  assert.match(journeyObjective(journey), /press Y/);
-  assert.deepEqual(updateJourney(journey, { x:1.5 * BLOCK_SIZE, z:25.5 * BLOCK_SIZE }), [], 'proximity alone must not craft');
-  const away = craftQuarryPick(journey, { x:60, z:60 });
-  assert.equal(away.ok, false);
-  assert.match(away.message, /field bench/);
-  const result = craftQuarryPick(journey, { x:1.5 * BLOCK_SIZE, z:25.5 * BLOCK_SIZE });
-  assert.deepEqual(result, { ok:true, event:'tool-crafted' });
-  assert.equal(journey.tool, TOOL.QUARRY);
-  assert.equal(journey.inventory[BLOCK.WOOD], 0);
-  assert.equal(journey.inventory[BLOCK.STONE], 0);
-  assert.equal(harvestInfo(journey, BLOCK.CRYSTAL).allowed, true);
-  assert.equal(harvestInfo(journey, BLOCK.BASALT).allowed, false);
+  assert.equal(benchRecipeReady(journey), true);
+  assert.equal(quarryRecipeReady(journey), false, 'the pick cannot be crafted before a bench exists');
+
+  const built=useJourney(journey,home,0);
+  assert.deepEqual(built,{ok:true,event:'bench-built'});
+  assert.ok(journey.bench);
+  assert.equal(journey.inventory[BLOCK.WOOD],2);
+  assert.equal(journey.inventory[BLOCK.STONE],4);
+  assert.equal(quarryRecipeReady(journey),true);
+  assert.match(journeyObjective(journey),/Return to your field bench/);
+  assert.deepEqual(updateJourney(journey,home),[], 'proximity alone must not craft');
+
+  const away=craftQuarryPick(journey,{x:60,z:60});
+  assert.equal(away.ok,false);assert.match(away.message,/field bench/);
+  const result=useJourney(journey,journey.bench);
+  assert.deepEqual(result,{ok:true,event:'tool-crafted'});
+  assert.equal(journey.tool,TOOL.QUARRY);
+  assert.equal(journey.inventory[BLOCK.WOOD],0);
+  assert.equal(journey.inventory[BLOCK.STONE],0);
+  assert.equal(harvestInfo(journey,BLOCK.CRYSTAL).allowed,true);
+  assert.equal(harvestInfo(journey,BLOCK.BASALT).allowed,false);
+});
+
+test('untouched prototype saves lose only the obsolete eight-plank starter gift',()=>{
+  const fresh=createJourney({tool:TOOL.HAND,inventory:{[BLOCK.PLANKS]:8}});
+  assert.equal(fresh.inventory[BLOCK.PLANKS],0);
+  const progressed=createJourney({tool:TOOL.HAND,inventory:{[BLOCK.PLANKS]:8,[BLOCK.WOOD]:1}});
+  assert.equal(progressed.inventory[BLOCK.PLANKS],8);
+  assert.equal(progressed.inventory[BLOCK.WOOD],1);
 });
 
 test('six lumen crystals awaken a persistent two-way passage to Lumen Hollow', () => {
