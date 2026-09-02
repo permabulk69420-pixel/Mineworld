@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { VoxelWorld } from '../src/world/world.js';
 import { BLOCK as B, BLOCK_SIZE as S } from '../src/world/blocks.js';
 import { collides, moveBody, blockOverlapsBody } from '../src/player/physics.js';
-import { stickAxes } from '../src/player/xr.js';
+import { stickAxes, locomotionInput } from '../src/player/xr.js';
 
 function floor(){const w=new VoxelWorld(1);for(let x=-5;x<6;x++)for(let z=-5;z<6;z++)w.set(x,0,z,B.STONE);return w;}
 
@@ -38,4 +38,11 @@ test('Quest sticks use xr-standard axes, with deadzone and two-axis fallback',()
   assert.deepEqual(stickAxes({axes:[.1,-.1]}),{x:0,y:0});
   assert.deepEqual(stickAxes({axes:[-1,1]}),{x:-1,y:1});
   assert.deepEqual(stickAxes(null),{x:0,y:0});
+});
+
+test('VR locomotion modes are mutually exclusive',()=>{
+  const axes={x:.6,y:-.8};
+  assert.deepEqual(locomotionInput('stick',axes,true),{forward:.8,strafe:.6,teleport:false});
+  assert.deepEqual(locomotionInput('teleport',axes,true),{forward:0,strafe:0,teleport:true});
+  assert.deepEqual(locomotionInput('teleport',axes,false),{forward:0,strafe:0,teleport:false});
 });
