@@ -1,104 +1,106 @@
 # Development journal
 
-## v0.2 — The First Passage — 2026-09-02
+## v0.3 — Quality reset / large-world foundation — 2026-09-02
 
-The owner's headset test clarified the product direction twice in useful ways. First, Mineworld should be developed as a game first rather than primarily as a creative sandbox. Second, the first Journey implementation still communicated "sandbox" immediately because it visibly exposed the full material palette, gifted blocks at spawn, and placed the first workbench for the player. That opening has now been corrected rather than asking the owner to keep testing through it.
+The second headset test invalidated the v0.2 development approach despite the code being technically functional.
 
-The normal entry remains **Journey mode**. Creative remains an explicit development/free-building option via `?creative=1`, with flight and unlimited placement kept out of normal progression.
+### Owner feedback that triggered the reset
 
-### Corrected opening
+- The playable spaces felt **far too small**. Progression immediately pushed the player from one little island to another instead of creating a world worth inhabiting.
+- The player-built field bench looked like a crude placeholder and lowered the visual standard rather than adding value.
+- Portal visuals/animation also read as placeholder effects.
+- The crafted quarry pick was especially bad: it appeared on **both hands**, was oriented sideways, was hard to identify, and did not actually participate in mining. Mining still happened through controller buttons/raycast, so the prop was decorative rather than an interaction.
+- Too many systems had been added in one pass. Because each one received little attention, technical breadth was being mistaken for game quality.
 
-A fresh Journey now starts with an **empty pack**. No build materials are selectable until they are actually gathered. The desktop hotbar hides unowned materials; the VR wrist literally reads **PACK EMPTY** and draws no material slots. Controller/keyboard selection cannot select a material with zero inventory.
+The owner suggested the correct development cadence directly: **add one thing at a time** and maintain standards about what is allowed into the build.
 
-There is no longer a prebuilt First Light field bench. The first dependency chain is now:
+### What was removed from playable Journey
 
-1. Start with the basic field tool and no carried building blocks.
-2. Gather **3 cedar + 2 limestone**.
-3. Choose a spot on First Light and press **Y** to establish the field bench in front of you. The resources are consumed and the chosen x/z position persists in the Journey save.
-4. Gather **2 additional cedar + 4 additional limestone**.
-5. Return to **your own** bench and press **Y** to make the quarry pick.
-6. Continue into the existing lumen/arch progression.
+The v0.2 bench → quarry pick → Old Arch → Lumen Hollow → resonators → resonant pick → deepstone → Old Quarry chain is now dormant. The underlying prototype code may remain temporarily while the runtime is cleaned up, but current Journey state forces those systems inactive and none of their props should appear.
 
-The short-lived prototype save that contains exactly the untouched eight-plank starter gift is migrated to the empty-pack start. Only that precise unprogressed state loses the obsolete gift; saves with actual gathered resources, edits, tool progression, or later discoveries are retained.
+The fake VR hand-tool meshes were removed entirely. `XRControls.updateTool()` is intentionally a no-op until a visible tool is also a real one-handed physical interaction.
 
-### Connected progression
+Current Journey has no advertised Y craft/use action. The wrist labels the player state as **HANDS** and only shows carried building materials.
 
-After the corrected opening, the current progression spine is:
+### Generator v2
 
-1. The quarry pick unlocks lumen harvesting; deepstone still rejects it.
-2. Gather **6 lumen crystals** and carry them to the Old Arch. The arch consumes them, wakes, and becomes a portal.
-3. Travel to **Lumen Hollow**. Discovery wakes the paired return waystone.
-4. Find the **three Hollow resonators**. Feed each one real lumen crystal with **Y**. Each activation persists and visibly changes the resonator.
-5. Return to the Hollow forge and temper the quarry pick into the luminous **resonant pick**.
-6. Dig beneath the Hollow and recover deepstone. Deepstone is carried as a progression resource rather than a tenth build slot.
-7. The first deepstone wakes the Hollow forge into a second passage to **The Old Quarry**.
-8. Discovering The Old Quarry permanently enables its heavier return waystone to Lumen Hollow.
+The seven-small-island generator was replaced by one large connected **First Light** landmass.
 
-The three hand-tool states remain visually distinct. The quarry version gains its pick head; the resonant version gains the bright cyan treatment and luminous ring. Generator version 1 remains unchanged, so existing terrain and player block edits survive the progression expansion.
+Current terrain goals/features:
 
-### Validation status
+- more than 175 voxels of east-west terrain span and more than 150 voxels north-south (well over 130 metres in each major dimension at 0.75 m/block);
+- a broad southern meadow and long northward sightline from spawn;
+- cedar country with a few very large trees for scale;
+- a lake and stream;
+- broad walkable caves rather than tiny tubes;
+- a high northern ridge;
+- western cliffs/escarpment;
+- several named regions on physically connected terrain rather than teleport-separated level pads;
+- no prefab field bench, portal, lookout quest structure, or progression prop at spawn.
 
-- The revised unit suite passed in Actions, including empty-pack start, no placeable starter material, explicit field-bench construction, resource consumption, quarry crafting at the player-established bench, the untouched eight-plank migration, Hollow resonators, resonant-tool gating, deepstone, both portal pairs, and Quarry discovery.
+The first v2 screenshot pass still felt too enclosed because the player spawned inside dense cedar canopy. That technically solved map size but did not communicate it. Spawn was therefore moved to the open meadow and a broad tree-free sightline was cut toward the distant ridge. The resulting deployed `foundation-start` screenshot was inspected and reads materially more open, with foreground meadow, distant terrain/tree line, and the ringed planet providing large-scale visual reference.
+
+### Save separation
+
+Generator v2 uses `mineworld.skyreach.save.v2`.
+
+The earlier prototype remains untouched under `mineworld.skyreach.save.v1`. This is deliberate: v2 is a different world design, so forcing old block edits/player position into it would be worse than preserving the prototype separately.
+
+### Validation
+
+Stable runtime/copy run: **GitHub Actions 33624617072**.
+
+- 18 unit tests passed.
 - Production Vite build passed.
-- Browser regression now **fails if fresh Journey exposes any unowned material slot**. It also asserts `Hands · empty pack`, the field-bench objective, and disabled Journey flight.
-- `journey-start.jpg` is generated from the actual fresh Journey runtime. It was inspected: no field bench is present, no material palette is visible, the selected state reads `Hands · empty pack`, and the objective reports cedar 0/3 and limestone 0/2.
-- Creative mode still passes its separate unrestricted regression path: pointer lock, flight, mining, placement, selection, save reload, and export.
-- The staged Hollow and real Hollow → Quarry runtime traversal checks still pass, with no browser/runtime/shader errors.
-- [Actions run 33622487218](https://github.com/permabulk69420-pixel/Mineworld/actions/runs/33622487218) completed build, browser validation, preview publishing, and GitHub Pages deployment successfully for the corrected opening.
-- The deployed game remains at `https://permabulk69420-pixel.github.io/Mineworld/`.
-- Software-rendered browser FPS is intentionally **not** treated as a Quest performance measurement.
+- Generator-v2 test checks determinism, connected key regions, large terrain extents, and safe spawn.
+- Rendered browser regression passed the built `/Mineworld/` game.
+- Fresh Journey asserts empty inventory, zero visible unowned material slots, `Hands · empty pack`, and no v0.2 Quarry/Hollow/bench progression language in diagnostics.
+- Creative regression still verifies full palette, flight, v2 local save, and JSON export.
+- Browser/runtime/shader error check passed.
+- GitHub Pages deployment succeeded.
+- The `previews` branch publishing job hit GitHub API HTTP 500 while creating a blob; retry hit the same GitHub-side failure. This does not affect the validated artifact or Pages deployment.
+- Software SwiftShader rendering was roughly ~450 chunks and ~200k+ triangles at very low software FPS. That number is not a Quest benchmark; the previous smaller build ran comfortably on Quest, but v2 still needs device observation.
 
-### Known boundaries
+### Current playable scope
 
-- This is an exploration/crafting progression slice, not yet a survival game: there is no health/hunger pressure, combat, creatures, or death loop.
-- The newly player-established field bench is a persisted scene prop, not a voxel structure with physical collision/destruction yet.
-- Crafting still uses contextual world interactions rather than a general recipe/inventory interface.
-- Lumen Hollow has a complete gameplay beat; The Old Quarry is reachable but does **not yet have its own substantial gameplay loop**.
-- Deepstone is tracked as a progression resource but does not yet have a downstream Quarry use beyond waking the passage.
-- Water remains decorative rather than simulated fluid.
-- The starting region remains finite. Creative flight is clamped to its build limits.
-- Saves remain local to the current browser/origin; export/import is the supported backup/device-transfer path.
-- Hand tracking and an in-VR settings menu are not implemented.
+Journey currently exists to answer one question first:
 
-### Next direction
+> **Does First Light finally feel like a world-sized place in the headset, rather than a toy map?**
 
-Do not add more content merely because the progression code exists. The next headset check should first answer whether the corrected opening now reads like a game: empty inventory, natural gathering, understandable bench construction, sensible Y interaction, and a clear reason to continue.
+Basic locomotion, teleport, finite gathering, voxel removal/placement, wrist inventory, saves, and export remain. Lumen and deepstone are deliberately harvest-locked until a real tool interaction is designed.
 
-If that survives, build **The Old Quarry as the third gameplay beat**. Deepstone should gain a meaningful downstream use there—restoring machinery, opening a buried structure, or powering a traversal mechanic—so the new capability materially changes the world. A small original creature/ecology layer remains a strong follow-up once the three-location progression spine feels coherent.
+Do not ask the owner to test a progression loop in this build. Walk/explore is the test.
+
+### Next feature — only after scale passes
+
+Build **one physical mining tool interaction** and spend an entire iteration on it if necessary.
+
+Requirements before it stays in Journey:
+
+- right-hand only unless the design has a real reason for two-handed use;
+- instantly readable silhouette and believable headset scale;
+- correct grip orientation and controller-relative pose;
+- visible motion corresponds to the actual mining action;
+- the tool must participate in hit detection/feedback rather than decorate a trigger press;
+- good impact sound/particles/haptics/target response;
+- no workbench, portal, crafting tree, second tool tier, or new region added in the same pass.
+
+Only once that interaction is worth keeping should the project consider rebuilding a workbench/station or progression around it.
+
+---
+
+## v0.2 — Discarded progression prototype — 2026-09-02
+
+v0.2 established finite Journey inventory and proved that progression/save/portal state could technically work. It eventually contained a player-established bench, quarry pick, Old Arch portal, Lumen Hollow resonators, a resonant tool tier, deepstone, and a route to The Old Quarry.
+
+The implementation passed extensive unit/browser checks, but the headset test showed the more important failure: the spaces and props were not good enough. The prototype is retained as engineering history, not as the current design direction.
+
+The main lesson from v0.2 is that CI can prove correctness but cannot establish **VR scale, visual quality, or tactile credibility**. Those require headset judgment and a narrower iteration cadence.
 
 ---
 
 ## v0.1 — Skyreach foundation — 2026-09-02
 
-Implemented the first playable archipelago: seven islands, a spring and cliff spill, caves, cedar trees, an ancient stone arch, lumen deposits, and a safe cedar lookout. The landscape consists of real editable blocks. Instanced grass and atmospheric elements are decorative.
+Implemented the original seven-island voxel prototype, locomotion, jumping, teleport, block editing, Creative mode, Quest controllers, wrist UI, local save/export, deterministic terrain, chunk meshing, and GitHub Pages validation/deployment.
 
-Added walking, jumping, single-block stepping, flight, block removal and placement, nine creative materials, Quest tracked controllers, teleporting, smooth/snap turning, and a wrist palette. Added local autosave, export/import, protected invalid saves, and a versioned generation contract.
-
-The public entry offers VR. Keyboard/mouse controls are available only with `?test=1` for development checks without a headset. Phone gameplay is outside the product scope. The owner explicitly wants development effort focused on VR.
-
-The repository now carries a production build and a GitHub Actions pipeline. Thirteen unit tests cover chunk boundaries, ray normals and reach, hidden-face removal, mesh winding, deterministic generation, safe spawn, collision, stepping, placement overlap, gamepad axes, and save validation/round trips. Browser regression checks run the built game under the repository subpath and produce screenshot artifacts.
-
-### Validation status
-
-- Local world/physics/save tests: 13 passed.
-- Local production build: passed; approximately 145 kB of compressed JavaScript, CSS, and HTML combined.
-- Actions browser check: passed WebGL rendering, stable initial view, flight, mining, placement, material selection, save reload, and export. The public entry hides desktop test controls. No browser runtime or shader errors were reported.
-- Inspected actual screenshots of the VR entry, the initial player view, and a mined plank replaced with a lumen crystal. The title screenshot is saved as `docs/skyreach.jpg`.
-- [Actions run 33610878143](https://github.com/permabulk69420-pixel/Mineworld/actions/runs/33610878143): build, visual previews, and GitHub Pages deployment all succeeded for `312932d`. The deployment reports `https://permabulk69420-pixel.github.io/Mineworld/` as its environment URL.
-- Graphics validation ran in Actions because the Work browser has WebGL disabled. Software rendering is useful for correctness checks; its frame rate does not measure headset performance. The public URL could not be independently opened by the Work web viewer.
-- Actual Quest 3 immersion, frame rate, and controller comfort remain untested.
-
-The desktop regression harness uses relative movement and pointer events through the game's normal input handlers. CDP's absolute mouse clicks under pointer lock can introduce camera movement. World generation, raycasting, edits, remeshing, rendering, and storage all run normally during these checks.
-
-### Known boundaries
-
-- Creative sandbox only: no crafting, survival, enemies, multiplayer, or infinite streaming.
-- The starting region is finite; flight is clamped to its build limits.
-- Water is decorative and does not simulate fluid flow.
-- Grass, clouds, the planet, and motes are decorative. Trees, terrain, ruins, crystals, and the lookout are editable blocks.
-- Saves are local to the current browser and origin. Export/import is the supported way to back up a world or move it between headsets.
-- Hand tracking and in-VR settings menus are not implemented. Set turn mode before entering VR.
-
-### Next session
-
-Prioritize the owner's first headset report: scale, motion, pointing direction, block placement, teleport landings, and performance around the home island. Fix those first. Then add the first exploration loop around the arch and distant waystones, retaining generator version 1 and all existing builds.
+The first headset report showed the underlying WebXR movement/performance foundation was viable, but subsequent progression work exposed the need for a much higher content/interactions quality bar.
