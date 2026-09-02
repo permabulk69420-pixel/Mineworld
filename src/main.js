@@ -12,7 +12,7 @@ import { Environment } from './environment.js';
 import { Particles } from './particles.js';
 import { Sound } from './audio.js';
 import { UI } from './ui/ui.js';
-import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, quarryRecipeReady, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, quarryForgePortalActive, quarryReturnPortalActive, journeyObjective, HOME, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS, OLD_QUARRY } from './game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, quarryRecipeReady, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, quarryForgePortalActive, quarryReturnPortalActive, journeyObjective, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS, OLD_QUARRY } from './game.js';
 import { readSave, createSave, writeSave, validateSave, readSettings, SETTINGS_KEY } from './save.js';
 
 const $=id=>document.getElementById(id);
@@ -50,18 +50,22 @@ async function boot(){
     if(result.ok)dirty=false;else ui.toast(result.message,6000);
   }
   function markDirty(){dirty=true;if(!writable){ui.saved(saved.message);return;}ui.saved('Saving…');clearTimeout(saveTimer);saveTimer=setTimeout(persist,900);}
-  function select(index){selected=(index+PALETTE.length)%PALETTE.length;ui.select(selected);if(started)markDirty();}
+  function select(index,force=false){
+    const next=(index+PALETTE.length)%PALETTE.length;
+    if(!creative&&!force&&!canPlace(journey,PALETTE[next]))return;
+    selected=next;ui.select(selected);if(started)markDirty();
+  }
   function cycle(amount){
     if(creative){select(selected+amount);return;}
     const direction=Math.sign(amount)||1;
     for(let step=1;step<=PALETTE.length;step++){
       const index=(selected+direction*step+PALETTE.length*2)%PALETTE.length;
-      if(canPlace(journey,PALETTE[index])){select(index);return;}
+      if(canPlace(journey,PALETTE[index])){select(index,true);return;}
     }
   }
   function flight(){
     if(!creative){
-      const result=useJourney(journey,player.getBody());
+      const result=useJourney(journey,player.getBody(),player.rig.rotation.y);
       if(result.ok)handleJourneyEvents([result]);else ui.toast(result.message,3600);
       return;
     }
@@ -97,7 +101,7 @@ async function boot(){
     }catch(error){ui.toast(error.message||'Could not read that world.',6000);}
   }
   ui=new UI({play,menu,flight,home,select,export:exportWorld,import:importWorld,settings:applySettings},desktopTest);
-  ui.setSettings(settings);ui.select(selected);applySettings(settings);
+  ui.setSettings(settings);ui.inventory(journey.inventory);ui.select(selected);applySettings(settings);
   const input=new Input(canvas,{look:(x,y)=>player.look(x,y),menu,flight,home,cycle,select,debug:()=>ui.toggleDebug(),
     unlock:()=>{if(!ui.menu)menu();},lockFailed:()=>ui.toast('Click the world to capture the mouse.'),
     pick:()=>{if(target){const index=PALETTE.indexOf(target.id);if(index>=0)select(index);}}});
@@ -123,9 +127,8 @@ async function boot(){
   const ghost=new THREE.Mesh(new THREE.BoxGeometry(S*.99,S*.99,S*.99),new THREE.MeshBasicMaterial({color:0xcde8a6,transparent:true,opacity:.19,depthWrite:false}));
   scene.add(ghost);ghost.visible=false;
 
-  // First Light field bench: a persistent in-world place for deliberate tool crafting.
+  // The field bench exists only after the player establishes one and its chosen position persists.
   const fieldBench=new THREE.Group();
-  fieldBench.position.set(HOME.x+2.4*S,world.spawn.y,HOME.z-2.1*S);
   const benchWood=new THREE.MeshLambertMaterial({color:0x8d6446}),benchStone=new THREE.MeshLambertMaterial({color:0x8f9b95});
   const benchTop=new THREE.Mesh(new THREE.BoxGeometry(S*2.25,S*.22,S*.92),benchWood);benchTop.position.y=S*.72;fieldBench.add(benchTop);
   for(const x of [-S*.82,S*.82])for(const z of [-S*.27,S*.27]){
@@ -135,7 +138,13 @@ async function boot(){
   const benchHandle=new THREE.Mesh(new THREE.CylinderGeometry(S*.055,S*.065,S*.78,7),benchWood);benchHandle.position.set(S*.34,S*1.08,0);benchHandle.rotation.z=-.62;fieldBench.add(benchHandle);
   const benchHead=new THREE.Mesh(new THREE.BoxGeometry(S*.52,S*.16,S*.18),benchStone);benchHead.position.set(S*.57,S*1.31,0);benchHead.rotation.z=-.62;fieldBench.add(benchHead);
   const benchGlow=new THREE.Mesh(new THREE.OctahedronGeometry(S*.16,0),new THREE.MeshBasicMaterial({color:0x6ccfbc,transparent:true,opacity:.32,depthWrite:false}));
-  benchGlow.position.set(0,S*1.08,-S*.2);fieldBench.add(benchGlow);scene.add(fieldBench);
+  benchGlow.position.set(0,S*1.08,-S*.2);fieldBench.add(benchGlow);fieldBench.visible=false;scene.add(fieldBench);
+  function syncFieldBench(){
+    if(creative||!journey.bench){fieldBench.visible=false;return;}
+    const vx=Math.floor(journey.bench.x/S),vz=Math.floor(journey.bench.z/S);
+    fieldBench.position.set(journey.bench.x,world.surface(vx,vz)*S,journey.bench.z);fieldBench.visible=true;
+  }
+  syncFieldBench();
 
   const portal=new THREE.Mesh(new THREE.PlaneGeometry(S*5.6,S*7.2),new THREE.MeshBasicMaterial({color:0x70f5df,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
   portal.position.set(ARCH.x,(generatedArchBase+4.7)*S,ARCH.z);portal.renderOrder=3;portal.visible=false;scene.add(portal);
@@ -224,7 +233,11 @@ async function boot(){
         highlight.material.opacity=.48+progress*.5;highlight.scale.setScalar(1+progress*.055);
         if(progress>=1&&elapsed-lastMine>.12){
           if(world.set(x,y,z,BLOCK.AIR,true)){
-            if(!creative)collectBlock(journey,id);
+            if(!creative){
+              collectBlock(journey,id);
+              if(!canPlace(journey,PALETTE[selected])){const index=PALETTE.indexOf(id);if(index>=0)select(index,true);}
+              ui.inventory(journey.inventory);
+            }
             particles.burst(x,y,z,id);sound.play('mine',id===BLOCK.CRYSTAL);lastMine=elapsed;markDirty();resetMining();aim();
           }
         }
@@ -235,17 +248,21 @@ async function boot(){
       if(!creative&&!spendBlock(journey,id)){ui.toast(`No ${BLOCKS[id].name.toLowerCase()} in your pack.`);return;}
       if(world.set(x,y,z,id,true)){
         sound.play('build',id===BLOCK.CRYSTAL);lastBuild=elapsed;markDirty();
-        if(!creative&&!canPlace(journey,id))cycle(1);
+        if(!creative){ui.inventory(journey.inventory);if(!canPlace(journey,id))cycle(1);}
         aim();
-      }else if(!creative)refundBlock(journey,id);
+      }else if(!creative){refundBlock(journey,id);ui.inventory(journey.inventory);}
     }
   }
 
   function handleJourneyEvents(events){
     for(const raw of events){
       const event=typeof raw==='string'?{event:raw}:raw;
+      if(event.event==='bench-built'){
+        sound.play('build');syncFieldBench();ui.inventory(journey.inventory);
+        ui.toast('Field bench established. Gather what you need for the quarry pick.',6000);markDirty();
+      }
       if(event.event==='tool-crafted'){
-        sound.play('build');xr.updateTool(journey.tool,false);
+        sound.play('build');xr.updateTool(journey.tool,false);ui.inventory(journey.inventory);
         if(!canPlace(journey,PALETTE[selected]))cycle(1);
         ui.toast('Quarry pick made. Lumen crystal can now be harvested.',6000);markDirty();
       }
@@ -257,7 +274,7 @@ async function boot(){
       }
       if(event.event==='resonator-awake'){
         const prop=resonatorProps[event.index];
-        sound.play('build',true);
+        sound.play('build',true);ui.inventory(journey.inventory);
         if(prop)particles.burst(prop.vx,Math.max(0,world.surface(prop.vx,prop.vz)),prop.vz,BLOCK.CRYSTAL);
         ui.toast(`Hollow resonator awakened · ${resonatorCount(journey)}/3`,4300);markDirty();
       }
@@ -316,10 +333,12 @@ async function boot(){
       const state=renderer.xr.isPresenting?xr.sample(dt,settings.turning):input.sample();
       const result=player.update(dt,state);if(result==='home'){ui.flight(false);ui.toast('The clouds carried you home.');markDirty();}
       player.rig.updateMatrixWorld(true);aim();actions(state);objective=progression();
+      ui.inventory(journey.inventory);
       xr.updateTool(journey.tool,creative);
       xr.updateWrist(selected,player.flying,{creative,inventory:journey.inventory,objective,tool:journey.tool});
     }else{highlight.visible=ghost.visible=false;resetMining();}
 
+    fieldBench.visible=!creative&&Boolean(journey.bench);
     const recipeReady=!creative&&quarryRecipeReady(journey);
     benchGlow.material.color.set(recipeReady?0xffe38f:journey.tool==='hand'?0x6ccfbc:0x5c8f87);
     benchGlow.material.opacity=recipeReady?.88:journey.tool==='hand'?.32:.14;
@@ -387,7 +406,7 @@ async function boot(){
   try{
     const available=!!navigator.xr&&await navigator.xr.isSessionSupported('immersive-vr');
     vrButton.disabled=!available;vrButton.textContent='Enter VR';
-    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, craft tools, restore the old passages'):'Open in your Quest browser to step inside.';
+    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · start empty, gather, build your tools, restore the passages'):'Open in your Quest browser to step inside.';
   }catch{vrButton.disabled=true;vrButton.textContent='Enter VR';}
   vrButton.addEventListener('click',async()=>{
     if(renderer.xr.isPresenting)return;vrButton.disabled=true;
