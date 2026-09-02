@@ -75,7 +75,7 @@ export function spendBlock(journey, id) {
 
 export function refundBlock(journey, id) {
   if (!PALETTE.includes(id)) return;
-  journey.inventory[id] = Math.min(MAX_STACK, (journey.inventory[id] || 0) + 1;
+  journey.inventory[id] = Math.min(MAX_STACK, (journey.inventory[id] || 0) + 1);
 }
 
 /** Foundation build: gather/build stays usable while fake tool progression is removed. */
