@@ -35,9 +35,14 @@ try{
   const desktop=await browser.newContext({viewport:{width:1440,height:960},deviceScaleFactor:1});
   page=await desktop.newPage();collect(page);await page.goto(url);await ready(page);
   await page.screenshot({path:resolve(out,'skyreach-title.jpg'),type:'jpeg',quality:90});
-  await page.getByRole('button',{name:'Explore the world'}).click();
+  assert.equal(await page.locator('#play-button').isVisible(),false,'The public entry is VR only');
+  assert.equal(await page.locator('#touch-controls').count(),0);
+  await page.goto(url+'?test=1');await ready(page);
+  await page.getByRole('button',{name:'Start desktop test'}).click();
   await page.waitForFunction(()=>!!document.pointerLockElement);
   await page.keyboard.press('F3');
+  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Grounded'));
+  assert.match(await page.locator('#debug').textContent(),/Pitch -5°/,'Capturing the mouse preserves the initial view');
   await page.screenshot({path:resolve(out,'first-light.jpg'),type:'jpeg',quality:90});
   await page.keyboard.press('8');assert.equal(await page.getByRole('button',{name:'Lumen crystal',exact:true}).getAttribute('aria-pressed'),'true');
   await page.keyboard.press('f');await page.keyboard.down('Space');await pause(450);await page.keyboard.up('Space');
@@ -62,28 +67,9 @@ try{
   const download=await downloadPromise;await download.saveAs(resolve(out,'world-export.json'));
   const exported=JSON.parse(await readFile(resolve(out,'world-export.json'),'utf8'));
   assert.deepEqual(exported.edits,stored.edits);assert.equal(exported.seed,stored.seed);
-  notes.push('Desktop: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.');
+  notes.push('Desktop test mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.');
   notes.push(`Desktop diagnostics: ${await page.locator('#debug').textContent()}`);
 
-  const mobile=await browser.newContext({viewport:{width:393,height:852},deviceScaleFactor:1,isMobile:true,hasTouch:true});
-  page=await mobile.newPage();collect(page);await page.goto(url);await ready(page);
-  await page.screenshot({path:resolve(out,'mobile-title.jpg'),type:'jpeg',quality:90});
-  await page.getByRole('button',{name:'Explore the world'}).tap();
-  assert.equal(await page.locator('#touch-controls').isVisible(),true);
-  await page.getByRole('button',{name:'Glass',exact:true}).tap();
-  assert.equal(await page.getByRole('button',{name:'Glass',exact:true}).getAttribute('aria-pressed'),'true');
-  await page.locator('#flight-button').tap();
-  assert.equal(await page.locator('#flight-button').getAttribute('aria-pressed'),'true');
-  const joystick=await page.locator('#move-stick').boundingBox();
-  await page.mouse.move(joystick.x+joystick.width/2,joystick.y+joystick.height/2);await page.mouse.down();
-  await page.mouse.move(joystick.x+joystick.width/2+28,joystick.y+joystick.height/2-23,{steps:6});await pause(650);await page.mouse.up();
-  const viewport=page.viewportSize();
-  for(const button of await page.locator('#hotbar button').all()){
-    const box=await button.boundingBox();assert.ok(box.x>=0&&box.x+box.width<=viewport.width+1);assert.ok(box.y+box.height<=viewport.height+1);
-  }
-  assert.ok(await page.evaluate(()=>document.body.scrollWidth<=innerWidth));
-  await page.screenshot({path:resolve(out,'mobile-world.jpg'),type:'jpeg',quality:90});
-  notes.push('Phone: responsive layout, touch entry, joystick, material selection, flight toggle, and visible hotbar passed.');
   assert.deepEqual(errors,[],'No browser runtime or shader errors');
   notes.push('Actual immersive Quest sessions and headset performance require a device playtest.');
   console.log(notes.join('\n'));

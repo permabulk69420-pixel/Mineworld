@@ -2,8 +2,8 @@ export class Input {
   constructor(canvas, callbacks) {
     this.canvas=canvas; this.callbacks=callbacks; this.keys=new Set();
     this.mine=false; this.build=false; this.jumpPressed=false;
-    this.stick={x:0,y:0}; this.touchVertical=0; this.lookPointer=null;
-    this.enabled=false; this.coarse=matchMedia('(pointer: coarse)').matches;
+    this.enabled=false;
+    this.ignoreMouseUntil=Infinity;
     const clear=()=>this.clear();
     window.addEventListener('blur',clear);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)clear();});
@@ -29,68 +29,37 @@ export class Input {
     });
     canvas.addEventListener('pointerdown',e=>{
       if(!this.enabled)return;
-      if(e.pointerType==='touch') {
-        this.lookPointer={id:e.pointerId,x:e.clientX,y:e.clientY}; canvas.setPointerCapture(e.pointerId); return;
-      }
+      if(e.pointerType!=='mouse')return;
       if(document.pointerLockElement!==canvas) { this.lock(); return; }
       if(e.button===0)this.mine=true;
       if(e.button===2)this.build=true;
       if(e.button===1)callbacks.pick();
     });
-    canvas.addEventListener('pointermove',e=>{
-      if(!this.enabled)return;
-      if(this.lookPointer?.id===e.pointerId){
-        callbacks.look((e.clientX-this.lookPointer.x)*0.004,(e.clientY-this.lookPointer.y)*0.004);
-        this.lookPointer.x=e.clientX;this.lookPointer.y=e.clientY;
-      }
-    });
-    const endLook=e=>{if(this.lookPointer?.id===e.pointerId)this.lookPointer=null;};
-    canvas.addEventListener('pointerup',endLook);canvas.addEventListener('pointercancel',endLook);
     document.addEventListener('mousemove',e=>{
-      if(this.enabled&&document.pointerLockElement===canvas)callbacks.look(e.movementX*0.0024,e.movementY*0.0024);
+      if(this.enabled&&document.pointerLockElement===canvas&&performance.now()>=this.ignoreMouseUntil)callbacks.look(e.movementX*0.0024,e.movementY*0.0024);
     });
     canvas.addEventListener('wheel',e=>{if(this.enabled){e.preventDefault();callbacks.cycle(e.deltaY>0?1:-1);}},{passive:false});
     document.addEventListener('pointerlockchange',()=>{
-      if(!document.pointerLockElement&&this.enabled&&!this.coarse) {this.clear();callbacks.unlock();}
+      if(document.pointerLockElement===canvas){this.ignoreMouseUntil=performance.now()+180;canvas.focus({preventScroll:true});}
+      if(!document.pointerLockElement&&this.enabled) {this.clear();callbacks.unlock();}
     });
-    const stick=document.querySelector('#move-stick'),knob=document.querySelector('#stick-knob');
-    let stickId=null;
-    const moveStick=e=>{
-      const rect=stick.getBoundingClientRect(),dx=e.clientX-rect.left-rect.width/2,dy=e.clientY-rect.top-rect.height/2;
-      const factor=Math.min(1,40/Math.max(1,Math.hypot(dx,dy)));
-      this.stick.x=dx*factor/40;this.stick.y=-dy*factor/40;
-      knob.style.transform=`translate(${dx*factor}px,${dy*factor}px)`;
-    };
-    stick.addEventListener('pointerdown',e=>{if(!this.enabled)return; e.preventDefault();stickId=e.pointerId;stick.setPointerCapture(e.pointerId);moveStick(e);});
-    stick.addEventListener('pointermove',e=>{if(stickId===e.pointerId)moveStick(e);});
-    const releaseStick=e=>{if(stickId===e.pointerId){stickId=null;this.stick.x=this.stick.y=0;knob.style.transform='';}};
-    stick.addEventListener('pointerup',releaseStick);stick.addEventListener('pointercancel',releaseStick);
-    for(const [id,action] of [['touch-mine','mine'],['touch-build','build'],['touch-up','up'],['touch-down','down']]){
-      const el=document.getElementById(id);
-      el.addEventListener('pointerdown',e=>{
-        if(!this.enabled)return;e.preventDefault();el.setPointerCapture(e.pointerId);
-        if(action==='up'){this.touchVertical=1;this.jumpPressed=true;}
-        else if(action==='down')this.touchVertical=-1;
-        else this[action]=true;
-      });
-      const release=()=>{if(action==='up'||action==='down')this.touchVertical=0;else this[action]=false;};
-      el.addEventListener('pointerup',release);el.addEventListener('pointercancel',release);
-    }
   }
 
   lock(){
-    if(this.coarse||!this.canvas.requestPointerLock)return;
+    if(!this.canvas.requestPointerLock)return;
+    // Ignore the cursor-recentring event on entry; it is not a player look gesture.
+    this.ignoreMouseUntil=performance.now()+180;
     try{const request=this.canvas.requestPointerLock();request?.catch(()=>this.callbacks.lockFailed());}
     catch{this.callbacks.lockFailed();}
   }
 
-  clear(){this.keys.clear();this.mine=this.build=this.jumpPressed=false;this.stick.x=this.stick.y=this.touchVertical=0;this.lookPointer=null;const knob=document.querySelector('#stick-knob');if(knob)knob.style.transform='';}
+  clear(){this.keys.clear();this.mine=this.build=this.jumpPressed=false;}
 
   sample(){
     const held=(...keys)=>keys.some(k=>this.keys.has(k))?1:0;
-    const value={forward:held('KeyW','ArrowUp')-held('KeyS','ArrowDown')+this.stick.y,
-      strafe:held('KeyD','ArrowRight')-held('KeyA','ArrowLeft')+this.stick.x,
-      vertical:held('Space')-held('ShiftLeft','ShiftRight')+this.touchVertical,
+    const value={forward:held('KeyW','ArrowUp')-held('KeyS','ArrowDown'),
+      strafe:held('KeyD','ArrowRight')-held('KeyA','ArrowLeft'),
+      vertical:held('Space')-held('ShiftLeft','ShiftRight'),
       jump:this.jumpPressed,sprint:!!held('ShiftLeft','ShiftRight'),mine:this.mine,build:this.build};
     this.jumpPressed=false;return value;
   }

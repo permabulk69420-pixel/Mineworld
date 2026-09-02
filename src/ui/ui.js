@@ -2,8 +2,9 @@ import { BLOCKS, PALETTE } from '../world/blocks.js';
 
 const $=id=>document.getElementById(id);
 export class UI {
-  constructor(callbacks,touch) {
-    this.callbacks=callbacks;this.touch=touch;this.playing=false;this.menu=true;this.selected=0;
+  constructor(callbacks,desktopTest) {
+    this.callbacks=callbacks;this.desktopTest=desktopTest;this.playing=false;this.menu=true;this.selected=0;
+    $('play-button').hidden=!desktopTest;$('desktop-test-controls').hidden=!desktopTest;
     this.hotbar=$('hotbar');
     PALETTE.forEach((id,i)=>{
       const block=BLOCKS[id],button=document.createElement('button');
@@ -22,25 +23,22 @@ export class UI {
     $('import-button').addEventListener('click',()=>$('import-file').click());
     $('import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(file)await callbacks.import(file);e.target.value='';});
     for(const name of ['turning','quality','sound'])$(name).addEventListener('change',()=>callbacks.settings(this.readSettings()));
-    for(const name of ['desktop','touch','vr'])$(`tab-${name}`).addEventListener('click',()=>this.controlTab(name));
-    this.controlTab(touch?'touch':'desktop');
     this.select(0);
   }
 
-  controlTab(name){for(const value of ['desktop','touch','vr']){$(`tab-${value}`).setAttribute('aria-selected',String(value===name));$(`controls-${value}`).hidden=value!==name;}}
   showSettings(show){$('settings-panel').hidden=!show;$('welcome-card').hidden=show;if(show)$('close-settings').focus();}
   setSettings(settings){$('turning').value=settings.turning;$('quality').value=settings.quality;$('sound').checked=settings.sound;}
   readSettings(){return {turning:$('turning').value,quality:$('quality').value,sound:$('sound').checked};}
-  ready(saved){$('play-button').disabled=false;$('play-label').textContent=saved?'Continue exploring':'Explore the world';}
+  ready(saved){$('play-button').disabled=false;$('play-label').textContent=saved?'Resume desktop test':'Start desktop test';}
   select(index){this.selected=index;[...this.hotbar.children].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===index)));$('selected-label').textContent=BLOCKS[PALETTE[index]].name;}
   setMenu(show){
     this.menu=show;$('welcome').hidden=!show;this.showSettings(false);
     for(const id of ['hotbar-wrap','crosshair','flight-button','menu-button'])$(id).hidden=show;
-    $('touch-controls').hidden=show||!this.touch;$('target-name').hidden=show;
-    if(this.playing){$('play-label').textContent='Back to your world';$('welcome-title').innerHTML='Stay a<br>little longer.';}
+    $('target-name').hidden=show;
+    if(this.playing){$('play-label').textContent='Resume desktop test';$('welcome-title').innerHTML='Stay a<br>little longer.';}
   }
   setXR(active){document.body.classList.toggle('xr-active',active);}
-  flight(enabled){$('flight-button').innerHTML=enabled?'Flying <kbd>F</kbd>':'Fly <kbd>F</kbd>';$('flight-button').setAttribute('aria-pressed',String(enabled));$('touch-up').setAttribute('aria-label',enabled?'Fly up':'Jump');$('touch-down').hidden=!enabled;}
+  flight(enabled){$('flight-button').innerHTML=enabled?'Flying <kbd>F</kbd>':'Fly <kbd>F</kbd>';$('flight-button').setAttribute('aria-pressed',String(enabled));}
   saved(message){$('save-status').textContent=message;}
   toast(message,ms=3200){clearTimeout(this.toastTimer);$('toast').textContent=message;$('toast').hidden=false;this.toastTimer=setTimeout(()=>$('toast').hidden=true,ms);}
   target(name){$('target-name').textContent=name||'';}

@@ -21,7 +21,7 @@ These priorities guide decisions; they are not a promise to implement every feat
 ## Guardrails
 
 - Quest 3 is the principal device. Headset rendering and input determine whether something is ready.
-- Desktop and mobile should still be useful for quick checks and casual building.
+- Keep the product focused on VR. Desktop input is an opt-in development tool for checking shared world behavior without a headset. There are no phone gameplay controls.
 - Stay original: no copied textures, sounds, names, UI, or creature designs.
 - Existing player builds should survive updates.
 - Preserve the GitHub Pages workflow and the stable play link.

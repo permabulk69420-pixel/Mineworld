@@ -1,6 +1,6 @@
 # Mineworld
 
-A Three.js voxel sandbox for Meta Quest, desktop, and phone. The first chapter, **Skyreach**, is a quiet archipelago of floating islands, cedar groves, springs, caves, and lumen crystals. Mine the landscape, build a home, and fly to the next island.
+A Three.js VR voxel sandbox for Meta Quest. The first chapter, **Skyreach**, is a quiet archipelago of floating islands, cedar groves, springs, caves, and lumen crystals. Mine the landscape, build a home, and fly to the next island.
 
 **[Play Mineworld](https://permabulk69420-pixel.github.io/Mineworld/)** · [Build and deployment](https://github.com/permabulk69420-pixel/Mineworld/actions)
 
@@ -10,35 +10,32 @@ A Three.js voxel sandbox for Meta Quest, desktop, and phone. The first chapter, 
 - Mining and unlimited creative building with nine materials.
 - Walking, collision, single-block stepping, jumping, and flight.
 - Quest WebXR: tracked controllers, head-relative locomotion, smooth or snap turning, teleport arc, and a wrist palette.
-- Desktop keyboard/mouse and phone touch controls.
 - Automatic saves in the current browser, plus JSON export/import for backups and device transfers.
 - Chunk meshes with hidden-face removal and vertex ambient occlusion; instanced foliage and debris.
 - GitHub Actions tests, builds, captures screenshots, and deploys to GitHub Pages.
 
-This is a playable foundation, not a finished Minecraft replacement. There is no survival, crafting, enemies, multiplayer, infinite terrain, or flowing-water simulation yet. Quest performance and controller feel still need an actual headset playtest.
+This first foundation focuses on creative exploration and building. Survival, crafting, enemies, multiplayer, infinite terrain, and flowing-water simulation are future possibilities. Quest performance and controller feel still need an actual headset playtest.
 
 ## Controls
 
-| Action | Desktop | Quest controllers | Phone |
-| --- | --- | --- | --- |
-| Move | WASD / arrows | Left stick | Left thumbstick |
-| Look / turn | Mouse | Head / right stick | Drag the world |
-| Mine | Hold left click | Hold right trigger | Hold Mine |
-| Place | Hold right click | Hold right grip | Hold Build |
-| Material | 1–9 / scroll / Q, E | X next / left grip previous | Tap hotbar |
-| Jump | Space | A | ↑ |
-| Toggle flight | F | Y | Fly |
-| Fly up / down | Space / Shift | A / B | ↑ / ↓ |
-| Teleport | — | Hold left trigger, aim at ground, release | — |
-| Return home | R / menu | Leave VR, then menu | Menu |
-| Menu | Esc | Headset's exit-VR control | ☰ |
-| Diagnostics | F3 | — | — |
+| Action | Quest controllers |
+| --- | --- |
+| Move | Left stick |
+| Look / turn | Head / right stick |
+| Mine | Hold right trigger |
+| Place | Hold right grip |
+| Material | X next / left grip previous |
+| Jump | A |
+| Toggle flight | Y |
+| Fly up / down | A / B |
+| Teleport | Hold left trigger, aim at ground, release |
+| Return home / settings | Leave VR using the headset control, then open Controls & settings |
 
 On Quest, open the play link **in the headset browser** and choose **Enter VR**. Grant the requested immersive-session permission and use controllers. Hand tracking is not implemented. Smooth turning is the default; snap turning is available in Controls & settings before entering VR.
 
 ## Saves
 
-Saves belong to a browser and device. They do not sync to GitHub. Use **Controls & settings → Export world** to keep a backup or carry a build to your headset. Importing asks before replacing the current device's world. Unsupported or corrupt saves are preserved rather than overwritten.
+Saves belong to a browser and device. They do not sync to GitHub. Use **Controls & settings → Export world** to keep a backup or carry a build to another headset. Importing asks before replacing the current device's world. Unsupported or corrupt saves are preserved rather than overwritten.
 
 The seed and terrain generator version are stored with coordinate-based block edits. Generator version 1 is a compatibility contract: future updates must keep it available for existing worlds.
 
@@ -54,6 +51,8 @@ npm run check
 
 The game has no runtime API, CDN, account, or key dependency. The Three.js bundle and all assets ship with the game. One block is 0.75 metres. The finite build region is approximately 190 × 190 metres, with a vertical limit of 96 metres.
 
+For checks without a headset, append `?test=1` to the game URL. This exposes **Start desktop test** and its control reference: WASD/mouse, left/right click to mine/place, 1–9 to choose blocks, F to fly, Space/Shift to rise/descend, R to return home, Esc for the menu, and F3 for diagnostics. This is a development aid. The public game is VR only, and has no phone gameplay controls.
+
 For browser regression checks (the same checks run in Actions):
 
 ```sh
@@ -68,7 +67,7 @@ Push builds also keep the latest screenshot set and report on the `previews` bra
 
 ## Deployment
 
-In repository **Settings → Pages**, select **GitHub Actions** as the source once. Every push to `main` then runs world/physics/save tests, builds, runs the browser check, and deploys. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
+In repository **Settings → Pages**, select **GitHub Actions** as the source once. Code pushes to `main` then run world/physics/save tests, build, run the browser check, and deploy. Documentation-only pushes skip deployment. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
 
 If the game builds but the Pages configuration step fails, enable the Pages source above and rerun the workflow. Browser sign-in is not required for routine code updates through the GitHub connection.
 

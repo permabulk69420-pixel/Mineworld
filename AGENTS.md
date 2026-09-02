@@ -3,7 +3,7 @@
 Mineworld is a long-running, original Three.js VR voxel game. The owner provides occasional playtests and gives the developer broad creative direction. Build a coherent game over successive sessions; keep each released version playable.
 
 - Read `docs/DIRECTION.md` and the latest `docs/DEVELOPMENT.md` entry first.
-- Use plain Three.js and Vite. Target Meta Quest 3 first, with desktop and phone entry points.
+- Use plain Three.js and Vite. Build for Meta Quest VR. The public entry is VR only; keyboard/mouse exist solely behind `?test=1` for developer checks. Do not add phone gameplay or make desktop a product goal unless the owner asks.
 - Keep publishing through GitHub Actions to the existing GitHub Pages URL. Do not migrate hosting unless asked.
 - Choose the next useful, bounded feature when asked to iterate. Finish, validate, and document it before expanding the scope.
 - Original procedural assets are intentional. Do not copy Minecraft branding, textures, or sounds. Keep runtime assets bundled.

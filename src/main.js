@@ -25,7 +25,7 @@ async function boot(){
   const world=new VoxelWorld(saved.data?.seed??DEFAULT_SEED);
   let writable=saved.writable,selected=saved.data?.selected??0,started=false,dirty=false,saveTimer=0;
   let lastMine=0,lastBuild=0,elapsed=0,frames=0,fps=0,statsTime=0,saveTime=0;
-  const touch=matchMedia('(pointer:coarse)').matches||new URLSearchParams(location.search).has('touch');
+  const desktopTest=new URLSearchParams(location.search).has('test');
   const canvas=$('world');
   renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;
@@ -58,8 +58,9 @@ async function boot(){
     if(document.pointerLockElement)document.exitPointerLock();
   }
   function play(){
+    if(!desktopTest)return;
     started=true;ui.playing=true;ui.setMenu(false);input.enabled=true;input.clear();sound.start();
-    if(!touch)input.lock();
+    input.lock();
     ui.flight(player.flying);markDirty();
   }
   function exportWorld(){
@@ -79,12 +80,11 @@ async function boot(){
       writable=false;location.reload();
     }catch(error){ui.toast(error.message||'Could not read that world.',6000);}
   }
-  ui=new UI({play,menu,flight,home,select,export:exportWorld,import:importWorld,settings:applySettings},touch);
+  ui=new UI({play,menu,flight,home,select,export:exportWorld,import:importWorld,settings:applySettings},desktopTest);
   ui.setSettings(settings);ui.select(selected);applySettings(settings);
   const input=new Input(canvas,{look:(x,y)=>player.look(x,y),menu,flight,home,cycle,select,debug:()=>ui.toggleDebug(),
     unlock:()=>{if(!ui.menu)menu();},lockFailed:()=>ui.toast('Click the world to capture the mouse.'),
     pick:()=>{if(target){const index=PALETTE.indexOf(target.id);if(index>=0)select(index);}}});
-  input.coarse=touch;
 
   // Let the loading label paint before generating and meshing the deterministic world.
   await new Promise(resolve=>setTimeout(resolve,0));
@@ -132,7 +132,7 @@ async function boot(){
 
   let last=performance.now();
   renderer.setAnimationLoop(time=>{
-    const dt=Math.min(Math.max((time-last)/1000,0),.05);last=time;elapsed+=dt;frames++;statsTime+=dt;saveTime+=dt;
+    const wallDt=Math.max((time-last)/1000,0),dt=Math.min(wallDt,.05);last=time;elapsed+=dt;frames++;statsTime+=wallDt;saveTime+=wallDt;
     const active=started&&(!ui.menu||renderer.xr.isPresenting);
     if(active){
       if(renderer.xr.isPresenting){player.rig.updateMatrixWorld(true);renderer.xr.updateCamera(player.camera);}
@@ -151,7 +151,7 @@ async function boot(){
       const p=player.getBody();let nearest=world.landmarks[0],distance=Infinity;
       for(const landmark of world.landmarks){const d=Math.hypot(p.x-landmark.x,p.z-landmark.z);if(d<distance){nearest=landmark;distance=d;}}
       ui.location(`${nearest.name} · ${player.flying?'Flying':'Creative'}`);
-      ui.debug(`${fps} FPS${renderer.xr.isPresenting?' · VR':''}\n${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles\n${worldRenderer.meshes.size} chunks · ${world.edits.size} block edits\nXYZ ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}\n${player.flying?'Flying':player.grounded?'Grounded':'Falling'} · Seed ${world.seed}`);
+      ui.debug(`${fps} FPS${renderer.xr.isPresenting?' · VR':''}\n${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles\n${worldRenderer.meshes.size} chunks · ${world.edits.size} block edits\nXYZ ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}\nYaw ${Math.round(player.rig.rotation.y*180/Math.PI)}° · Pitch ${Math.round(player.pitch*180/Math.PI)}°\n${player.flying?'Flying':player.grounded?'Grounded':'Falling'} · Seed ${world.seed}`);
     }
     if(saveTime>15){saveTime=0;if(started&&(dirty||active))persist();}
   });
