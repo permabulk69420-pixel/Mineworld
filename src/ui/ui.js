@@ -4,12 +4,12 @@ const $=id=>document.getElementById(id);
 export class UI {
   constructor(callbacks,desktopTest) {
     this.callbacks=callbacks;this.desktopTest=desktopTest;this.creative=new URLSearchParams(location.search).get('creative')==='1';
-    this.playing=false;this.menu=true;this.selected=0;
+    this.playing=false;this.menu=true;this.selected=0;this.inventoryValue={};this.inventoryKey='';
     $('play-button').hidden=!desktopTest;$('desktop-test-controls').hidden=!desktopTest;
     this.hotbar=$('hotbar');
     PALETTE.forEach((id,i)=>{
       const block=BLOCKS[id],button=document.createElement('button');
-      button.type='button';button.title=`${i+1} · ${block.name}`;button.setAttribute('aria-label',block.name);button.setAttribute('aria-pressed','false');
+      button.type='button';button.dataset.block=String(id);button.title=`${i+1} · ${block.name}`;button.setAttribute('aria-label',block.name);button.setAttribute('aria-pressed','false');
       button.innerHTML=`<svg viewBox="0 0 32 36" aria-hidden="true"><path fill="${block.color}" d="m16 1 15 9-15 9L1 10Z"/><path fill="${block.color}" d="m1 10 15 9v16L1 26Z"/><path fill="#000" opacity=".16" d="m1 10 15 9v16L1 26Z"/><path fill="${block.color}" d="m31 10-15 9v16l15-9Z"/><path fill="#000" opacity=".31" d="m31 10-15 9v16l15-9Z"/></svg><small>${i+1}</small>`;
       button.addEventListener('pointerdown',e=>e.stopPropagation());
       button.addEventListener('click',()=>callbacks.select(i));this.hotbar.append(button);
@@ -24,14 +24,23 @@ export class UI {
     $('import-button').addEventListener('click',()=>$('import-file').click());
     $('import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(file)await callbacks.import(file);e.target.value='';});
     for(const name of ['turning','quality','sound'])$(name).addEventListener('change',()=>callbacks.settings(this.readSettings()));
-    this.select(0);
+    this.inventory({});this.select(0);
   }
 
   showSettings(show){$('settings-panel').hidden=!show;$('welcome-card').hidden=show;if(show)$('close-settings').focus();}
   setSettings(settings){$('turning').value=settings.turning;$('quality').value=settings.quality;$('sound').checked=settings.sound;}
   readSettings(){return {turning:$('turning').value,quality:$('quality').value,sound:$('sound').checked};}
   ready(saved){$('play-button').disabled=false;$('play-label').textContent=saved?'Resume desktop test':'Start desktop test';}
-  select(index){this.selected=index;[...this.hotbar.children].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===index)));$('selected-label').textContent=BLOCKS[PALETTE[index]].name;}
+  inventory(inventory={}){
+    const key=this.creative?'creative':PALETTE.map(id=>inventory[id]||0).join(',');if(key===this.inventoryKey)return;this.inventoryKey=key;this.inventoryValue={...inventory};
+    [...this.hotbar.children].forEach((button,i)=>{button.hidden=!this.creative&&(inventory[PALETTE[i]]||0)<=0;});
+    this.select(this.selected);
+  }
+  select(index){
+    this.selected=index;[...this.hotbar.children].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===index&&!el.hidden)));
+    const id=PALETTE[index],count=this.inventoryValue[id]||0;
+    $('selected-label').textContent=this.creative?BLOCKS[id].name:count>0?`${BLOCKS[id].name} ×${count}`:'Hands · empty pack';
+  }
   setMenu(show){
     this.menu=show;$('welcome').hidden=!show;this.showSettings(false);
     for(const id of ['hotbar-wrap','crosshair','menu-button'])$(id).hidden=show;
