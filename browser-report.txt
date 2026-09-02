@@ -1,12 +1,29 @@
-Journey default: empty pack, no exposed creative palette, player-built bench objective, and creative flight disabled.
-Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.
-Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.
-Deepstone forge passage: runtime traversal reached Old Quarry, persisted discovery, and rendered the return waystone.
-Desktop diagnostics: 6 FPS
-102 draw calls · 38,941 triangles
-187 chunks · 0 block edits
-XYZ 40.1 / 29.3 / -20.6
-Yaw 0° · Pitch -7°
-Resonant pick · The Old Quarry reached · passage back to Lumen Hollow active · Seed 734921
-Actual immersive Quest sessions and headset performance require a device playtest.
+Foundation Journey: large-world start rendered with empty pack and no bench/portal/tool progression exposed.
+MINEWORLD
+First Light · Flying
+Saved on this device
+Flying F
+☰
+Lumen crystal
+1
+2
+3
+4
+5
+6
+7
+8
+9
+MINE LMB · BUILD RMB · MENU ESC
+2 FPS
+233 draw calls · 207,146 triangles
+448 chunks · 0 block edits
+XYZ 0.4 / 25.5 / 25.3
+Yaw 0° · Pitch -5°
+Creative · Seed 734921
+locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Controls & settings' })
+
+    at /home/runner/work/Mineworld/Mineworld/tests/browser-smoke.mjs:65:63
 Browser errors:
