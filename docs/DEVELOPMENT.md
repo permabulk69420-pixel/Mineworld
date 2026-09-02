@@ -14,9 +14,13 @@ The repository now carries a production build and a GitHub Actions pipeline. Thi
 
 - Local world/physics/save tests: 13 passed.
 - Local production build: passed; approximately 145 kB of compressed JavaScript, CSS, and HTML combined.
-- The Work browser has WebGL disabled, so graphical checks are delegated to the repository's GitHub Actions browser test.
-- Initial Actions screenshots verified the rendered islands and exposed a desktop test-camera jump on mouse capture. Entry now ignores the synthetic cursor-recentring movement. The corrected browser and deployment checks are pending.
+- Actions browser check: passed WebGL rendering, stable initial view, flight, mining, placement, material selection, save reload, and export. The public entry hides desktop test controls. No browser runtime or shader errors were reported.
+- Inspected actual screenshots of the VR entry, the initial player view, and a mined plank replaced with a lumen crystal. The title screenshot is saved as `docs/skyreach.jpg`.
+- [Actions run 33610878143](https://github.com/permabulk69420-pixel/Mineworld/actions/runs/33610878143): build, visual previews, and GitHub Pages deployment all succeeded for `312932d`. The deployment reports `https://permabulk69420-pixel.github.io/Mineworld/` as its environment URL.
+- Graphics validation ran in Actions because the Work browser has WebGL disabled. Software rendering is useful for correctness checks; its frame rate does not measure headset performance. The public URL could not be independently opened by the Work web viewer.
 - Actual Quest 3 immersion, frame rate, and controller comfort remain untested.
+
+The desktop regression harness uses relative movement and pointer events through the game's normal input handlers. CDP's absolute mouse clicks under pointer lock can introduce camera movement. World generation, raycasting, edits, remeshing, rendering, and storage all run normally during these checks.
 
 ### Known boundaries
 

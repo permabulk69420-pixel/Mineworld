@@ -4,6 +4,8 @@ A Three.js VR voxel sandbox for Meta Quest. The first chapter, **Skyreach**, is 
 
 **[Play Mineworld](https://permabulk69420-pixel.github.io/Mineworld/)** · [Build and deployment](https://github.com/permabulk69420-pixel/Mineworld/actions)
 
+![The Skyreach Isles in Mineworld](docs/skyreach.jpg)
+
 ## First build: v0.1
 
 - Seven deterministic, fully editable islands with original procedural textures.
@@ -67,8 +69,8 @@ Push builds also keep the latest screenshot set and report on the `previews` bra
 
 ## Deployment
 
-In repository **Settings → Pages**, select **GitHub Actions** as the source once. Code pushes to `main` then run world/physics/save tests, build, run the browser check, and deploy. Documentation-only pushes skip deployment. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
+This repository deploys through **GitHub Actions → GitHub Pages**. Code pushes to `main` run world/physics/save tests, build, run the browser check, and deploy. Documentation-only pushes skip deployment. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
 
-If the game builds but the Pages configuration step fails, enable the Pages source above and rerun the workflow. Browser sign-in is not required for routine code updates through the GitHub connection.
+For a new fork, select **Settings → Pages → GitHub Actions** as the source once. Browser sign-in is not required for routine code updates through the GitHub connection.
 
 See [the direction](docs/DIRECTION.md) and [the development journal](docs/DEVELOPMENT.md) before extending the game.
