@@ -2,7 +2,7 @@ VR settings: stick movement is default, teleport is opt-in, and wrist display de
 Foundation Journey: large-world start rendered with empty pack and no bench/portal/tool progression exposed.
 Creative developer mode: large-world WebGL render, pointer lock, flight, material selection, v2 save, and export passed.
 Desktop diagnostics: 2 FPS
-218 draw calls · 157,110 triangles
+219 draw calls · 200,088 triangles
 367 chunks · 0 block edits
 XYZ 24.4 / 21.8 / 39.1
 Yaw 0° · Pitch -5°
