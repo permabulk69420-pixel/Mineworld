@@ -10,6 +10,23 @@ It also inherits too much of Minecraft's visual language: exposed cube terrain, 
 
 The next milestone is therefore **WORLD**. Do not build a grapple, pickaxe, crafting station, creature, progression loop, new quest, or traversal upgrade until the world itself passes.
 
+## Do not expand one biome forever
+
+Making the existing meadow/cedar terrain four times larger is not the solution. The current green country should become **one starting biome inside a much broader geographic region**, not the template repeated to the horizon.
+
+Expansion must introduce genuinely different biome-scale places. A biome is not just a palette swap. Its terrain grammar, vegetation silhouettes, ground materials, water relationship, atmospheric character, density and major landforms should change.
+
+The initial world target should contain at least three large-scale environmental identities with long, natural transitions between them. A plausible art-direction test set is:
+
+- **First Light / green country** — the comparatively familiar starting landscape: open grass country, cedar groves, lakes and sheltered valleys. Keep it as an anchor rather than the whole game.
+- **Wind-cut stone country** — a broad drier basin or upland dominated by long exposed strata, fins, shelves, pillars, arches and ravines. Sparse vegetation should use non-block silhouettes and the horizon should read radically differently from First Light.
+- **Dark wet lowlands** — a lower, wetter region with substantial continuous water, channels, giant roots/reeds or other unusual growth, darker ground and a denser atmospheric silhouette. It should not look like a Minecraft swamp.
+- **High pale country** can become a later extension: major elevation, exposed pale geology, cloud/haze, sparse strange vegetation and distant monumental forms.
+
+These names and exact themes are provisional. The requirement is diversity of **form**, not attachment to a specific biome list.
+
+Biome transitions should take meaningful travel time and follow geography. Avoid checkerboard noise or abrupt `grass -> desert -> snow` borders. Valleys can become wetter; elevation can expose different geology; rain shadows can create dry country; forests can thin naturally into stone uplands.
+
 ## What the next world must achieve
 
 ### 1. It must feel genuinely large in VR
@@ -18,7 +35,7 @@ The player should not spawn somewhere that lets them mentally measure the whole 
 
 A major destination should take minutes of actual walking to reach, not a short jog. Distant mountains, forests, cliffs and landmarks should sit at scales that create real depth in the headset. The normal view should suggest more world beyond what can immediately be understood.
 
-First Light should be on the order of **hundreds of metres of meaningful traversal scale**, with room to grow toward roughly half-kilometre to kilometre-class regions if Quest performance and streaming support it. Do not achieve this by generating an enormous flat empty sheet.
+First Light and its neighbouring biome-scale country should be on the order of **hundreds of metres of meaningful traversal scale**, with room to grow toward roughly half-kilometre to kilometre-class regions if Quest performance and streaming support it. Do not achieve this by generating an enormous flat empty sheet.
 
 ### 2. The world architecture must stop assuming the whole world is resident
 
@@ -45,28 +62,29 @@ Terrain may remain voxel-derived, but the presentation should develop its own vi
 - stronger macro geology: long cliffs, shelves, ravines, valleys, ridges, arches, overhangs and exposed strata;
 - vegetation that is not a trunk made of blocks with a cube/blob leaf crown;
 - non-cubic procedural meshes for trees, shrubs, grasses, rocks, roots and other surface detail where appropriate;
-- a continuous-looking water treatment rather than water reading as another pile of cubes;
+- continuous-looking water rather than water reading as another pile of cubes;
 - atmospheric depth, sky, clouds/haze and distant silhouettes that make scale legible;
 - landmarks whose silhouettes remain readable from hundreds of metres away.
 
 Do not chase photorealism. A stylised world is fine. It simply needs to look intentionally like **Mineworld**, not like an approximation of Minecraft assets made with Three.js primitives.
 
-### 4. First Light must be a region, not an island-shaped level pad
+### 4. First Light must become one part of a region, not an island-shaped level pad
 
-The immediate target is one convincing starting region containing materially different spaces: broad open country, dense forest, substantial elevation, water, cliffs/ravines, caves and at least a few strong natural landmarks.
+The immediate target is a convincing starting geography in which First Light occupies only part of what the player can travel through. It can contain broad open country, forest and water, but walking outward should eventually produce a major environmental transition instead of more copies of the same hills and trees.
 
 The player does not need quests yet, but walking should continuously reveal new compositions and destinations. A ridge should actually tower over a valley. A forest should have an interior. A cave entrance should imply real depth. Water should occupy geographic space rather than decorate one small depression.
 
-The outer world can eventually contain multiple large regions/landmasses, but do not fake scale by surrounding First Light with a collection of tiny pads.
+Do not fake world size by surrounding First Light with a collection of tiny pads or islands.
 
 ## World acceptance test
 
 Do not move on to gameplay-system development until a Quest test can answer yes to most of these:
 
 - Does this feel like a place I could get lost in rather than an arena I can immediately understand?
-- Can I look toward at least several destinations that feel genuinely far away?
+- Can I look toward several destinations that feel genuinely far away?
+- After travelling for minutes, have I entered places whose geology and vegetation genuinely differ from where I started?
+- Do biome transitions feel geographic rather than like procedural tiles?
 - Do elevation and landmarks feel large at human scale?
-- Does moving for several minutes continue to reveal meaningfully different terrain?
 - Does the landscape have a visual identity that would not immediately be described as Minecraft?
 - Are forests, water, cliffs and caves convincing environments rather than small props/features on one island?
 - Does Quest performance remain comfortable while delivering that scale?
@@ -79,48 +97,25 @@ A large world is not itself a game, but deciding the exact progression loop befo
 
 Mineworld will eventually need exploration, creatures, danger, equipment, useful building, progression and reasons to travel. None of those are committed to a specific implementation yet.
 
-In particular:
+## Current comfort fixes
 
-- no Minecraft-style material/tool ladder is assumed;
-- no grapple or traversal mechanic is currently scheduled;
-- no workbench/crafting tree is currently scheduled;
-- no portal-to-the-next-island progression is returning;
-- no single gimmick has to define the whole game.
+The current deployed foundation keeps the necessary VR cleanup already completed:
 
-Once the world itself is compelling, choose the next gameplay addition based on what that world naturally makes fun and useful.
+- stick locomotion is the default Journey mode;
+- teleport locomotion is optional rather than active at the same time;
+- smooth/snap turning remains separate;
+- the wrist display is hidden by default and can be toggled;
+- the lake waterline defect has regression coverage.
 
-## Interface and locomotion principles
-
-The current comfort fixes remain valid regardless of future game design:
-
-- Stick movement is the Journey default.
-- Teleport is optional in settings and is mutually exclusive with stick translation.
-- Turning is separately selectable as smooth or snap.
-- The wrist display is information on demand, hidden by default and toggleable during Journey.
-- The player should not be forced to stare at objective/UI text in their peripheral vision.
-
-## Development method
-
-**One important problem at a time.** Right now the important problem is the world.
-
-Immediate sequence:
-
-1. Keep the water/locomotion/wrist cleanup stable.
-2. Establish scalable chunk/world streaming sufficient for a genuinely larger region.
-3. Rebuild First Light's macro terrain at much larger perceived scale.
-4. Replace the most Minecraft-like visual signatures, especially vegetation, terrain palette and water presentation.
-5. Add large natural landmarks and stronger biome/subregion composition.
-6. Inspect flat screenshots for obvious failures, then judge scale and identity in Quest.
-7. Repeat world work until the headset test passes.
-8. **Only then choose the first real gameplay system.**
+Preserve these while rebuilding the world.
 
 ## Guardrails
 
-- Quest 3 is the principal device. Headset judgement overrides dimensions on paper and flat-browser impressions.
-- Keep the product VR-first. Desktop remains an opt-in development/regression harness; there are no phone gameplay controls.
-- Stay original: no copied Minecraft textures, sounds, names, UI, vegetation designs or progression structures.
-- Preserve existing saves where technically possible; if a fundamental generator change requires a new generation slot, preserve older saves separately rather than silently destroying them.
-- Do not re-enable dormant v0.2 bench/portal/resonator/tool code because it already exists.
-- Do not add traversal, crafting or progression merely to make the build seem more game-like while the world is still weak.
-- Preserve GitHub Pages deployment and automated browser regression checks.
-- Inspect generated screenshots before asking for headset testing, while recognising screenshots cannot establish VR scale.
+- Quest 3 is the principal device. Headset judgement overrides flat-browser impressions for scale and interaction.
+- Keep the product focused on VR. Desktop controls remain an opt-in regression/development harness; there are no phone gameplay controls.
+- Stay original: no copied textures, sounds, names, UI, creature designs, or Minecraft branding.
+- Preserve old saves rather than silently destroying them. Generator changes that invalidate terrain require a new save/generator version or an explicit migration strategy.
+- Do not re-enable dormant v0.2 bench/portal/resonator/tool progression just because the code still exists.
+- Do not use tiny islands to create artificial content count.
+- Preserve the GitHub Pages workflow and stable play link.
+- Inspect generated screenshots for obvious composition/rendering failures before asking for headset testing, while recognizing that screenshots cannot validate VR scale or physical interaction.
