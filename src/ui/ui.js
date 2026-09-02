@@ -23,13 +23,18 @@ export class UI {
     $('export-button').addEventListener('click',()=>callbacks.export());
     $('import-button').addEventListener('click',()=>$('import-file').click());
     $('import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(file)await callbacks.import(file);e.target.value='';});
-    for(const name of ['turning','quality','sound'])$(name).addEventListener('change',()=>callbacks.settings(this.readSettings()));
+    for(const name of ['locomotion','turning','wrist','quality','sound'])$(name).addEventListener('change',()=>callbacks.settings(this.readSettings()));
     this.inventory({});this.select(0);
   }
 
   showSettings(show){$('settings-panel').hidden=!show;$('welcome-card').hidden=show;if(show)$('close-settings').focus();}
-  setSettings(settings){$('turning').value=settings.turning;$('quality').value=settings.quality;$('sound').checked=settings.sound;}
-  readSettings(){return {turning:$('turning').value,quality:$('quality').value,sound:$('sound').checked};}
+  setSettings(settings){
+    $('locomotion').value=settings.locomotion;$('turning').value=settings.turning;$('wrist').value=settings.wrist;
+    $('quality').value=settings.quality;$('sound').checked=settings.sound;
+  }
+  readSettings(){
+    return {locomotion:$('locomotion').value,turning:$('turning').value,wrist:$('wrist').value,quality:$('quality').value,sound:$('sound').checked};
+  }
   ready(saved){$('play-button').disabled=false;$('play-label').textContent=saved?'Resume desktop test':'Start desktop test';}
   inventory(inventory={}){
     const key=this.creative?'creative':PALETTE.map(id=>inventory[id]||0).join(',');if(key===this.inventoryKey)return;this.inventoryKey=key;this.inventoryValue={...inventory};
