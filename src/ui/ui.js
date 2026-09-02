@@ -3,7 +3,8 @@ import { BLOCKS, PALETTE } from '../world/blocks.js';
 const $=id=>document.getElementById(id);
 export class UI {
   constructor(callbacks,desktopTest) {
-    this.callbacks=callbacks;this.desktopTest=desktopTest;this.playing=false;this.menu=true;this.selected=0;
+    this.callbacks=callbacks;this.desktopTest=desktopTest;this.creative=new URLSearchParams(location.search).get('creative')==='1';
+    this.playing=false;this.menu=true;this.selected=0;
     $('play-button').hidden=!desktopTest;$('desktop-test-controls').hidden=!desktopTest;
     this.hotbar=$('hotbar');
     PALETTE.forEach((id,i)=>{
@@ -33,7 +34,8 @@ export class UI {
   select(index){this.selected=index;[...this.hotbar.children].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===index)));$('selected-label').textContent=BLOCKS[PALETTE[index]].name;}
   setMenu(show){
     this.menu=show;$('welcome').hidden=!show;this.showSettings(false);
-    for(const id of ['hotbar-wrap','crosshair','flight-button','menu-button'])$(id).hidden=show;
+    for(const id of ['hotbar-wrap','crosshair','menu-button'])$(id).hidden=show;
+    $('flight-button').hidden=show||!this.creative;
     $('target-name').hidden=show;
     if(this.playing){$('play-label').textContent='Resume desktop test';$('welcome-title').innerHTML='Stay a<br>little longer.';}
   }
