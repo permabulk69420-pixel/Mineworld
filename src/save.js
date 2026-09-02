@@ -1,4 +1,5 @@
 import { BLOCKS, DEFAULT_SEED, GENERATOR_VERSION, PALETTE, withinWorld, WORLD_LIMIT, HEIGHT_LIMIT, BLOCK_SIZE } from './world/blocks.js';
+import { createJourney, snapshotJourney } from './game.js';
 
 export const SAVE_KEY = 'mineworld.skyreach.save.v1';
 export const SETTINGS_KEY = 'mineworld.settings.v1';
@@ -23,9 +24,10 @@ export function validateSave(value) {
     && p.y >= 0 && p.y < HEIGHT_LIMIT * BLOCK_SIZE) {
     player = { x:p.x, y:p.y, z:p.z, yaw:p.yaw, pitch:Math.max(-1.4,Math.min(1.4,p.pitch)), flying:Boolean(p.flying) };
   }
+  const journey = createJourney(value.journey);
   return { version:1, generatorVersion:GENERATOR_VERSION, seed:value.seed, edits, player,
     selected:Number.isInteger(value.selected) && value.selected >= 0 && value.selected < PALETTE.length ? value.selected : 0,
-    savedAt:typeof value.savedAt === 'string' ? value.savedAt : null };
+    journey:snapshotJourney(journey), savedAt:typeof value.savedAt === 'string' ? value.savedAt : null };
 }
 
 export function readSave(storage) {
@@ -37,9 +39,10 @@ export function readSave(storage) {
   catch { return { data:null, writable:false, raw, message:'An unreadable save is protected. Export it before replacing it.' }; }
 }
 
-export function createSave(world, player, selected) {
+export function createSave(world, player, selected, journey) {
   return { version:1, generatorVersion:GENERATOR_VERSION, seed:world.seed ?? DEFAULT_SEED,
-    edits:[...world.edits.values()], player:player.snapshot(), selected, savedAt:new Date().toISOString() };
+    edits:[...world.edits.values()], player:player.snapshot(), selected,
+    journey:snapshotJourney(journey), savedAt:new Date().toISOString() };
 }
 
 export function writeSave(storage, save) {
