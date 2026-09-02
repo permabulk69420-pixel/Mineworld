@@ -37,6 +37,7 @@ try{
   await page.screenshot({path:resolve(out,'skyreach-title.jpg'),type:'jpeg',quality:90});
   assert.equal(await page.locator('#play-button').isVisible(),false,'The public entry is VR only');
   assert.equal(await page.locator('#touch-controls').count(),0);
+  await page.setViewportSize({width:1024,height:768});
   await page.goto(url+'?test=1');await ready(page);
   await page.getByRole('button',{name:'Start desktop test'}).click();
   await page.waitForFunction(()=>!!document.pointerLockElement);
@@ -52,10 +53,15 @@ try{
   await page.dispatchEvent('body','mousemove',{movementX:0,movementY:460,bubbles:true});
   await page.waitForFunction(()=>document.querySelector('#target-name').textContent.length>0);
   const before=await editCount(page);
-  await page.mouse.down({button:'left'});
+  // CDP mouse.down reuses absolute cursor coordinates and creates a spurious
+  // look movement under pointer lock. Dispatch through the game's pointer
+  // handlers instead; mining, targeting, meshing, and persistence stay real.
+  await page.dispatchEvent('#world','pointerdown',{pointerType:'mouse',button:0,buttons:1,bubbles:true});
   await page.waitForFunction(n=>Number(document.querySelector('#debug').textContent.match(/(\d+) block edits/)?.[1])>n,before,{timeout:10000});
-  await page.mouse.up({button:'left'});
-  await page.mouse.down({button:'right'});await pause(400);await page.mouse.up({button:'right'});
+  await page.dispatchEvent('#world','pointerup',{pointerType:'mouse',button:0,buttons:0,bubbles:true});
+  await page.dispatchEvent('#world','pointerdown',{pointerType:'mouse',button:2,buttons:2,bubbles:true});
+  await page.waitForFunction(()=>document.querySelector('#target-name').textContent==='Lumen crystal',null,{timeout:10000});
+  await page.dispatchEvent('#world','pointerup',{pointerType:'mouse',button:2,buttons:0,bubbles:true});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('mineworld.skyreach.save.v1')||'null')?.edits.some(e=>e[3]===7),null,{timeout:12000});
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('mineworld.skyreach.save.v1')));
   assert.ok(stored.edits.some(e=>e[3]===7));assert.equal(stored.selected,7);
