@@ -14,11 +14,12 @@ Lumen crystal
 8
 9
 MINE LMB · BUILD RMB · FLY F
-20 FPS
-138 draw calls · 77,001 triangles
+2 FPS
+133 draw calls · 75,705 triangles
 187 chunks · 0 block edits
-XYZ 1.1 / 27.7 / 19.1
+XYZ 1.1 / 27.0 / 19.1
+Yaw 41° · Pitch 15°
 Flying · Seed 734921
-page.waitForFunction: Timeout 30000ms exceeded.
-    at /home/runner/work/Mineworld/Mineworld/tests/browser-smoke.mjs:48:14
+page.waitForFunction: Timeout 10000ms exceeded.
+    at /home/runner/work/Mineworld/Mineworld/tests/browser-smoke.mjs:56:14
 Browser errors:
