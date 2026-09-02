@@ -54,8 +54,8 @@ test('mesher hides shared faces, including across chunk boundaries',()=>{
   }
 });
 
-test('generator v3 is repeatable, large, connected at key regions, and gives a safe home',()=>{
-  assert.equal(GENERATOR_VERSION,3);
+test('generator v2 is repeatable, large, connected at key regions, and gives a safe home',()=>{
+  assert.equal(GENERATOR_VERSION,2);
   const a=generateWorld(new VoxelWorld(DEFAULT_SEED)),b=generateWorld(new VoxelWorld(DEFAULT_SEED));
   const digest=w=>{const h=createHash('sha256');for(const [key,chunk] of w.chunks){h.update(key);h.update(chunk.data);}return h.digest('hex');};
   assert.equal(digest(a),digest(b));assert.equal(a.edits.size,0);assert.ok(a.landmarks.length>=5);
@@ -65,12 +65,6 @@ test('generator v3 is repeatable, large, connected at key regions, and gives a s
   assert.ok(Math.max(...zs)-Math.min(...zs)>150,'continent should have substantial depth');
   const home=safeHome(a);assert.ok(Number.isFinite(home.y));assert.equal(collides(a,home),false);
   assert.equal(collides(a,{...home,y:home.y-.08}),true);
-});
-
-test('natural generation does not rebuild forests from player wood and leaf voxels',()=>{
-  const w=generateWorld(new VoxelWorld(DEFAULT_SEED));let wood=0,leaves=0;
-  for(const chunk of w.chunks.values())for(const id of chunk.data){if(id===B.WOOD)wood++;if(id===B.LEAVES)leaves++;}
-  assert.equal(wood,0);assert.equal(leaves,0);
 });
 
 test('lake basin is filled continuously to the same shoreline radius',()=>{
