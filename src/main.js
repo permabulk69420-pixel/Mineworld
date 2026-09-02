@@ -12,7 +12,7 @@ import { Environment } from './environment.js';
 import { Particles } from './particles.js';
 import { Sound } from './audio.js';
 import { UI } from './ui/ui.js';
-import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, quarryRecipeReady, craftQuarryPick, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, HOME, ARCH, LUMEN_HOLLOW } from './game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, quarryRecipeReady, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, HOME, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS } from './game.js';
 import { readSave, createSave, writeSave, validateSave, readSettings, SETTINGS_KEY } from './save.js';
 
 const $=id=>document.getElementById(id);
@@ -61,8 +61,8 @@ async function boot(){
   }
   function flight(){
     if(!creative){
-      const result=craftQuarryPick(journey,player.getBody());
-      if(result.ok)handleJourneyEvents([result.event]);else ui.toast(result.message,3600);
+      const result=useJourney(journey,player.getBody());
+      if(result.ok)handleJourneyEvents([result]);else ui.toast(result.message,3600);
       return;
     }
     player.toggleFlight();ui.flight(player.flying);ui.toast(player.flying?'Flight on · Rise above the islands':'Back on your feet');markDirty();
@@ -140,6 +140,7 @@ async function boot(){
   portal.position.set(ARCH.x,(generatedArchBase+4.7)*S,ARCH.z);portal.renderOrder=3;portal.visible=false;scene.add(portal);
   const portalRing=new THREE.Mesh(new THREE.RingGeometry(S*1.8,S*2.15,36),new THREE.MeshBasicMaterial({color:0xb8fff0,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
   portalRing.position.copy(portal.position);portalRing.scale.y=1.7;portalRing.renderOrder=4;portalRing.visible=false;scene.add(portalRing);
+
   const hollowWaystone=new THREE.Group();
   hollowWaystone.position.set(LUMEN_HOLLOW.x,generatedHollowGround*S,LUMEN_HOLLOW.z);
   const waystoneRing=new THREE.Mesh(new THREE.TorusGeometry(S*1.55,S*.11,8,28),new THREE.MeshBasicMaterial({color:0x8cf6e1,transparent:true,opacity:.68,depthWrite:false,blending:THREE.AdditiveBlending}));
@@ -150,6 +151,31 @@ async function boot(){
     const post=new THREE.Mesh(new THREE.CylinderGeometry(S*.13,S*.2,S*3.3,7),new THREE.MeshLambertMaterial({color:0x667b79}));post.position.set(x,S*1.65,0);hollowWaystone.add(post);
   }
   hollowWaystone.visible=false;scene.add(hollowWaystone);
+
+  // Lumen Hollow resonance encounter. These props do not modify generator-v1 terrain.
+  const hollowStone=new THREE.MeshLambertMaterial({color:0x667774}),hollowDark=new THREE.MeshLambertMaterial({color:0x334947});
+  const resonatorProps=HOLLOW_RESONATORS.map((point,index)=>{
+    const group=new THREE.Group(),vx=Math.floor(point.x/S),vz=Math.floor(point.z/S);
+    group.position.set(point.x,world.surface(vx,vz)*S,point.z);
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(S*.58,S*.78,S*.34,7),hollowStone);base.position.y=S*.17;group.add(base);
+    for(const x of [-S*.31,S*.31]){
+      const prong=new THREE.Mesh(new THREE.BoxGeometry(S*.18,S*1.25,S*.22),hollowDark);prong.position.set(x,S*.88,0);prong.rotation.z=x<0?-.13:.13;group.add(prong);
+    }
+    const core=new THREE.Mesh(new THREE.OctahedronGeometry(S*.26,0),new THREE.MeshBasicMaterial({color:0x6f9992,transparent:true,opacity:.35,depthWrite:false}));core.position.y=S*.92;group.add(core);
+    const halo=new THREE.Mesh(new THREE.TorusGeometry(S*.38,S*.045,6,20),new THREE.MeshBasicMaterial({color:0x8cf6e1,transparent:true,opacity:.1,depthWrite:false,blending:THREE.AdditiveBlending}));halo.position.y=S*.92;halo.rotation.x=Math.PI/2;group.add(halo);
+    group.visible=false;scene.add(group);return {group,core,halo,index,vx,vz};
+  });
+
+  const hollowForge=new THREE.Group(),forgeVX=Math.floor(HOLLOW_FORGE.x/S),forgeVZ=Math.floor(HOLLOW_FORGE.z/S);
+  hollowForge.position.set(HOLLOW_FORGE.x,world.surface(forgeVX,forgeVZ)*S,HOLLOW_FORGE.z);
+  const forgeBase=new THREE.Mesh(new THREE.CylinderGeometry(S*.9,S*1.1,S*.34,8),hollowStone);forgeBase.position.y=S*.17;hollowForge.add(forgeBase);
+  const forgeTable=new THREE.Mesh(new THREE.BoxGeometry(S*1.45,S*.26,S*.8),hollowDark);forgeTable.position.y=S*.74;hollowForge.add(forgeTable);
+  const forgePick=new THREE.Mesh(new THREE.CylinderGeometry(S*.055,S*.07,S*1.05,7),benchWood);forgePick.position.set(-S*.12,S*1.02,0);forgePick.rotation.z=-.55;hollowForge.add(forgePick);
+  const forgeHead=new THREE.Mesh(new THREE.BoxGeometry(S*.72,S*.16,S*.2),hollowStone);forgeHead.position.set(S*.17,S*1.31,0);forgeHead.rotation.z=-.55;hollowForge.add(forgeHead);
+  const forgeCore=new THREE.Mesh(new THREE.OctahedronGeometry(S*.28,0),new THREE.MeshBasicMaterial({color:0x629a91,transparent:true,opacity:.22,depthWrite:false,blending:THREE.AdditiveBlending}));forgeCore.position.set(0,S*1.48,-S*.22);hollowForge.add(forgeCore);
+  const forgeHalo=new THREE.Mesh(new THREE.TorusGeometry(S*.48,S*.055,7,24),new THREE.MeshBasicMaterial({color:0xa5fff0,transparent:true,opacity:.1,depthWrite:false,blending:THREE.AdditiveBlending}));forgeHalo.position.copy(forgeCore.position);forgeHalo.rotation.x=Math.PI/2;hollowForge.add(forgeHalo);
+  hollowForge.visible=false;scene.add(hollowForge);
+
   const aimOrigin=new THREE.Vector3(),aimDirection=new THREE.Vector3(),cameraPosition=new THREE.Vector3();
   let target=null,placement=null,lastObjective='';
 
@@ -203,17 +229,28 @@ async function boot(){
   }
 
   function handleJourneyEvents(events){
-    for(const event of events){
-      if(event==='tool-crafted'){
+    for(const raw of events){
+      const event=typeof raw==='string'?{event:raw}:raw;
+      if(event.event==='tool-crafted'){
         sound.play('build');xr.updateTool(journey.tool,false);
         if(!canPlace(journey,PALETTE[selected]))cycle(1);
         ui.toast('Quarry pick made. Lumen crystal can now be harvested.',6000);markDirty();
       }
-      if(event==='arch-awake'){
+      if(event.event==='arch-awake'){
         sound.play('build',true);ui.toast('The Old Arch wakes. Step into the light.',6500);markDirty();
       }
-      if(event==='lumen-reached'){
-        sound.play('build',true);ui.toast('Lumen Hollow discovered. A return waystone answers the arch.',6500);markDirty();
+      if(event.event==='lumen-reached'){
+        sound.play('build',true);ui.toast('Lumen Hollow discovered. Three dormant resonators answer the waystone.',6500);markDirty();
+      }
+      if(event.event==='resonator-awake'){
+        const prop=resonatorProps[event.index];
+        sound.play('build',true);
+        if(prop)particles.burst(prop.vx,Math.max(0,world.surface(prop.vx,prop.vz)),prop.vz,BLOCK.CRYSTAL);
+        ui.toast(`Hollow resonator awakened · ${resonatorCount(journey)}/3`,4300);markDirty();
+      }
+      if(event.event==='tool-resonant'){
+        sound.play('build',true);xr.updateTool(journey.tool,false);
+        ui.toast('The quarry pick resonates. Deepstone can now be broken.',6500);markDirty();
       }
     }
   }
@@ -260,12 +297,34 @@ async function boot(){
       xr.updateTool(journey.tool,creative);
       xr.updateWrist(selected,player.flying,{creative,inventory:journey.inventory,objective,tool:journey.tool});
     }else{highlight.visible=ghost.visible=false;resetMining();}
+
     const recipeReady=!creative&&quarryRecipeReady(journey);
-    benchGlow.material.color.set(recipeReady?0xffe38f:journey.tool==='quarry'?0x5c8f87:0x6ccfbc);
-    benchGlow.material.opacity=recipeReady ? .88 : journey.tool==='quarry' ? .18 : .32;
+    benchGlow.material.color.set(recipeReady?0xffe38f:journey.tool==='hand'?0x6ccfbc:0x5c8f87);
+    benchGlow.material.opacity=recipeReady?.88:journey.tool==='hand'?.32:.14;
     benchGlow.rotation.y=elapsed*.9;benchGlow.position.y=S*(1.08+(recipeReady?Math.sin(elapsed*3)*.05:0));
+
     portal.visible=portalRing.visible=!creative&&journey.archAwake;
     hollowWaystone.visible=!creative&&journey.lumenReached;
+    hollowForge.visible=!creative&&journey.lumenReached;
+    for(const prop of resonatorProps){
+      prop.group.visible=!creative&&journey.lumenReached;
+      const awake=Boolean(journey.resonators?.[prop.index]);
+      prop.core.material.color.set(awake?0x8dffe9:0x6f9992);
+      prop.core.material.opacity=awake?.92:.30;
+      prop.core.rotation.y=elapsed*(awake?1.6:.28)+prop.index;
+      prop.halo.material.opacity=awake?.55:.08;
+      prop.halo.scale.setScalar(awake?1+Math.sin(elapsed*2.6+prop.index)*.07:1);
+      prop.halo.rotation.z=elapsed*(awake?.48:.08);
+    }
+    const forgeReady=!creative&&journey.tool==='quarry'&&resonatorsReady(journey);
+    const forgeDone=journey.tool==='resonant';
+    forgeCore.material.color.set(forgeDone?0xc7fff3:forgeReady?0xffe38f:0x629a91);
+    forgeCore.material.opacity=forgeDone?.82:forgeReady?.95:.22;
+    forgeCore.rotation.y=elapsed*(forgeDone?1.5:forgeReady?2.2:.3);
+    forgeHalo.material.opacity=forgeDone?.45:forgeReady?.7:.08;
+    forgeHalo.rotation.z=-elapsed*(forgeReady?.65:.15);
+    forgeHalo.scale.setScalar(forgeReady?1+Math.sin(elapsed*3)*.09:1);
+
     if(portal.visible){
       portal.material.opacity=.25+Math.sin(elapsed*2.2)*.09;portalRing.material.opacity=.45+Math.sin(elapsed*1.6+1)*.12;
       portalRing.rotation.z=elapsed*.18;
@@ -283,7 +342,8 @@ async function boot(){
       const p=player.getBody();let nearest=world.landmarks[0],distance=Infinity;
       for(const landmark of world.landmarks){const d=Math.hypot(p.x-landmark.x,p.z-landmark.z);if(d<distance){nearest=landmark;distance=d;}}
       ui.location(`${nearest.name} · ${creative?(player.flying?'Flying':'Creative'):'Journey'}`);
-      ui.debug(`${fps} FPS${renderer.xr.isPresenting?' · VR':''}\n${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles\n${worldRenderer.meshes.size} chunks · ${world.edits.size} block edits\nXYZ ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}\nYaw ${Math.round(player.rig.rotation.y*180/Math.PI)}° · Pitch ${Math.round(player.pitch*180/Math.PI)}°\n${creative?'Creative':`${journey.tool==='quarry'?'Quarry pick':'Field tool'} · ${objective}`} · Seed ${world.seed}`);
+      const toolName=journey.tool==='resonant'?'Resonant pick':journey.tool==='quarry'?'Quarry pick':'Field tool';
+      ui.debug(`${fps} FPS${renderer.xr.isPresenting?' · VR':''}\n${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles\n${worldRenderer.meshes.size} chunks · ${world.edits.size} block edits\nXYZ ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}\nYaw ${Math.round(player.rig.rotation.y*180/Math.PI)}° · Pitch ${Math.round(player.pitch*180/Math.PI)}°\n${creative?'Creative':`${toolName} · ${objective}`} · Seed ${world.seed}`);
     }
     if(saveTime>15){saveTime=0;if(started&&(dirty||active))persist();}
   });
@@ -294,7 +354,7 @@ async function boot(){
   try{
     const available=!!navigator.xr&&await navigator.xr.isSessionSupported('immersive-vr');
     vrButton.disabled=!available;vrButton.textContent='Enter VR';
-    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, craft tools, awaken the arch'):'Open in your Quest browser to step inside.';
+    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, craft tools, restore the old passages'):'Open in your Quest browser to step inside.';
   }catch{vrButton.disabled=true;vrButton.textContent='Enter VR';}
   vrButton.addEventListener('click',async()=>{
     if(renderer.xr.isPresenting)return;vrButton.disabled=true;
