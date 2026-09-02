@@ -2,26 +2,25 @@
 
 Mineworld should become a beautiful, tactile VR exploration/adventure game in a mutable voxel world. The current problem is more fundamental than progression: **the world must stop reading as a small Minecraft-like island before more game systems are allowed to define it.**
 
-The next milestone is therefore **WORLD**. Do not build a grapple, pickaxe progression, crafting station, creature system, combat loop, quest chain, or traversal upgrade to compensate for an environment that is not yet convincing.
+The next milestone remains **WORLD**. Do not build a grapple, pickaxe progression, crafting station, creature system, combat loop, quest chain, or traversal upgrade to compensate for an environment that is not yet convincing.
 
 ## Current judgement
 
-The v0.3 generator solved the original toy-island problem only numerically. It made the landmass larger on paper, but in Quest the starting area still read immediately as Minecraft: stepped cube terrain, green cap over brown dirt, stone beneath, block trunks, block/blob foliage, and a comprehensible island edge.
+The v0.3 generator solved the original toy-island problem only numerically. It made the landmass larger on paper, but in Quest the starting area still read immediately as Minecraft: stepped cube terrain, familiar green/brown/stone layering, block trees and a comprehensible island edge.
 
-The v0.4 world study begins removing that visual inheritance rather than merely scaling it up.
+A v0.4 visual-reset experiment attempted to solve this by draping a smoother decorative ground mesh over the editable voxel world and adding separate procedural flora/cloud geometry. **That experiment failed and has been rolled back.** In Quest it destroyed block/step readability, the player could visibly clip through the decorative surface and see the old authoritative terrain underneath, and the experimental atmosphere produced a large black view-following artifact.
 
-Current visual-reset work includes:
+The deployed runtime is therefore back on the coherent generator-v2/v0.3 foundation while the world redesign continues. The v0.4/v3 save created during the failed experiment remains untouched in browser storage but is not the active save slot.
 
-- generated WOOD/LEAVES forests removed entirely;
-- natural vegetation rendered as procedural non-cubic geometry;
-- a smoother visual ground skin draped over the editable voxel terrain;
-- familiar grass/dirt/stone stratigraphy broken into sunmoss, blue shale and sparse loam pockets;
-- pixel-art/nearest-neighbour terrain treatment replaced by broader painted material structure;
-- cubic clouds replaced by soft ellipsoidal cloud forms;
-- long rock ribs introduced as macro silhouettes rather than relying only on noise hills;
-- shoreline reeds and wind-shaped sail flora used as the first non-Minecraft vegetation study.
+## Non-negotiable VR world rule: one authoritative surface
 
-This art direction is **not locked**. If the sail flora or sunmoss world still looks cheap, generic, over-stylised, or derivative in Quest, change it. The requirement is a recognisable Mineworld identity, not attachment to the first experiment.
+Where the player sees the ground is where collision, walking, raycasts, gathering, placement and block edits must agree the ground is.
+
+Do **not** solve visual identity by placing a second decorative terrain shell over the voxel collision surface. In VR, even small disagreement between visual and physical surfaces destroys spatial trust.
+
+Future terrain rendering may use bevels, alternate topology, richer shaders/materials, different voxel shapes, higher-resolution terrain cells, marching/surface extraction, or another representation, but the visible surface and the interaction/collision surface must be derived from the same authoritative geometry/data. If natural terrain becomes smooth, physics and interaction must understand that same smooth surface. If interaction remains block-addressable, block boundaries must remain readable enough that the player can predict where they can stand and what they can edit.
+
+Decorative vegetation, rocks and distant scenery may use non-voxel meshes because they are not the walkable terrain itself, but they must not masquerade as solid geometry unless collision/interaction supports them.
 
 ## Do not expand one biome forever
 
@@ -29,53 +28,33 @@ Making the current starting country four times larger is not the solution. First
 
 Expansion must introduce genuinely different places. A biome is not a palette swap. Its terrain grammar, vegetation silhouettes, ground materials, water relationship, atmospheric character, density and major landforms must change.
 
-The initial broad world should eventually contain at least three strong environmental identities with long geographic transitions. A useful working set is:
+The broad world should eventually contain at least three strong environmental identities with long geographic transitions. Exact names/themes are provisional; diversity of **form** is the invariant. One region may be lush/open country, another a wind-cut stone basin with long strata and arches, another a dark wet lowland with substantial continuous water and radically different vegetation, and later high country may use major elevation and pale exposed geology.
 
-- **First Light / wind garden** — the comparatively open starting country: sunmoss, low rolling ground, sail flora, lake country and exposed blue shale. This is the familiar anchor, not the whole world.
-- **Wind-cut stone country** — a broad drier basin/upland dominated by long exposed strata, fins, shelves, pillars, natural arches and ravines. Sparse vegetation should have a radically different silhouette from First Light.
-- **Dark wet lowlands** — lower terrain with substantial continuous water, channels, reeds/roots or other unusual growth, darker geology and denser atmospheric depth. It must not read as a Minecraft swamp.
-- **High pale country** can become a later extension: major elevation, exposed pale geology, cloud/haze, sparse strange vegetation and monumental distant forms.
-
-These names and exact themes are provisional. The invariant is diversity of **form**.
-
-Biome transitions should take meaningful travel time and follow geography. Avoid checkerboard climate noise or abrupt `grass -> desert -> snow` borders. Valleys can become wetter; elevation can expose different geology; rain shadows can create dry country; vegetation should thin, change and overlap through transition zones.
+Biome transitions should take meaningful travel time and follow geography. Avoid checkerboard climate noise or abrupt `grass -> desert -> snow` borders.
 
 ## What the world must achieve
 
 ### 1. It must feel genuinely large in VR
 
-The player should not spawn somewhere that lets them mentally measure the whole playable landmass in seconds.
+The player should not spawn somewhere that lets them mentally measure the whole playable landmass in seconds. Major destinations should take minutes of actual walking to reach. Distant mountains, forests, cliffs and landmarks should create real headset depth and suggest more world beyond what can immediately be understood.
 
-Major destinations should take minutes of actual walking to reach. Distant mountains, forests, cliffs and landmarks should sit at scales that create real depth in the headset. The normal view should suggest more world beyond what can immediately be understood.
-
-First Light plus neighbouring biome-scale country should reach **hundreds of metres of meaningful traversal scale**, with room to grow toward roughly half-kilometre to kilometre-class regions if Quest performance and streaming support it. Do not achieve this with a giant flat sheet.
+First Light plus neighbouring biome-scale country should reach hundreds of metres of meaningful traversal scale, with room to grow toward roughly half-kilometre to kilometre-class regions if Quest performance and streaming support it. Do not achieve this with a giant empty sheet.
 
 ### 2. The world architecture must stop assuming everything is resident
 
-The current generator still eagerly creates the finite region. That architecture encourages small worlds because expansion permanently increases resident chunks, meshes and draw cost.
+The current generator still eagerly creates the finite region. Move toward deterministic chunk streaming around the player so larger geography does not imply permanently resident detailed chunks. Preserve edits independently of residency and use cheaper distant representation where useful.
 
-Move toward deterministic chunk streaming around the player:
+This infrastructure matters only if it quickly produces a visibly larger and more varied world. Do not disappear into engine work for its own sake.
 
-- generate/load nearby chunks;
-- unload distant detailed chunks safely;
-- preserve edits independently of chunk residency;
-- use cheaper distant terrain/landmark representation where useful;
-- keep generation deterministic from the seed;
-- maintain safe Quest memory and draw-call budgets.
+### 3. Stop looking like Minecraft without breaking spatial truth
 
-This infrastructure only matters if it quickly produces a visibly larger and more varied world. Do not disappear into engine work for its own sake.
+The starting area's identity still needs replacement. Change the actual terrain/material/vegetation language rather than hiding it under another mesh.
 
-### 3. Voxel data does not dictate voxel presentation
-
-The world remains mutable and block-addressable underneath, but natural scenery should not look constructed from the same cubes the player places.
-
-Use non-cubic procedural geometry, smooth visual terrain treatments, continuous-looking water, macro geology, atmospheric depth and distant silhouettes. Player edits can still expose or place discrete voxel forms; untouched nature should have its own presentation layer.
+Useful avenues include different terrain cell proportions or topology, larger-scale geology instead of noise hills, custom material relationships, non-block natural vegetation, more continuous water treatment, atmosphere/distant silhouettes, and biome-specific landforms. But any change to walkable terrain must obey the one-authoritative-surface rule above.
 
 ### 4. First Light must become one part of a region
 
-Walking outward from First Light should eventually produce a major environmental transition instead of more copies of the same hills and vegetation.
-
-A ridge should tower over a valley. A forest/growth field should have an interior. A cave entrance should imply real depth. Water should occupy geographic space. Distant silhouettes should create destinations before any quest text does.
+Walking outward from First Light should eventually produce a major environmental transition instead of more copies of the same hills and vegetation. A ridge should tower over a valley. A forest/growth field should have an interior. A cave entrance should imply real depth. Water should occupy geographic space. Distant silhouettes should create destinations before any quest text does.
 
 Do not fake world size by surrounding the start with tiny pads or islands.
 
@@ -89,7 +68,8 @@ Do not move on to gameplay-system development until a Quest test can answer yes 
 - Do biome transitions feel geographic rather than procedural tiles?
 - Do elevation and landmarks feel large at human scale?
 - Would someone seeing the opening area without context immediately call it Minecraft-like? If yes, keep changing it.
-- Are vegetation, water, cliffs and caves convincing environments rather than small props/features?
+- Does every walkable visible surface agree with collision and interaction?
+- Can the player visually understand steps, ledges and editable terrain boundaries?
 - Does Quest performance remain comfortable while delivering that scale?
 
 If the answer is no, continue working on the world. **Do not compensate by adding gameplay systems.**
@@ -110,13 +90,9 @@ Mineworld will eventually need exploration, creatures, danger, equipment, useful
 
 ## Save/version guardrail
 
-Generator changes that materially alter terrain get a new save slot rather than silently applying old edits to new geography.
+The active coherent world is generator v2 / `mineworld.skyreach.save.v2`. The earlier prototype remains `mineworld.skyreach.save.v1`. The failed visual experiment used `mineworld.skyreach.save.v3`; do not delete or silently migrate it, but do not make it active again unless a compatible generator is deliberately restored.
 
-- generator v3 / v0.4 world study: `mineworld.skyreach.save.v3`
-- generator v2 / v0.3 large-world foundation: `mineworld.skyreach.save.v2`
-- earlier prototype: `mineworld.skyreach.save.v1`
-
-Keep prior slots untouched.
+Future generator changes that materially alter geography still require a new save slot or an explicit migration strategy.
 
 ## Guardrails
 
@@ -126,4 +102,4 @@ Keep prior slots untouched.
 - Do not re-enable dormant v0.2 bench/portal/resonator/tool progression just because the code still exists.
 - Do not use tiny islands to create artificial content count.
 - Preserve the GitHub Pages workflow and stable play link.
-- Inspect generated screenshots for obvious composition/rendering failures before asking for headset testing, while recognizing screenshots cannot validate VR scale or physical interaction.
+- Inspect generated screenshots for obvious composition/rendering failures before asking for headset testing, while recognizing screenshots cannot validate VR scale, stereo artifacts or physical surface agreement.
