@@ -1,57 +1,61 @@
 # Mineworld
 
-A Three.js VR voxel game for Meta Quest. The current **v0.3 foundation** deliberately strips the earlier progression prototype back to the parts worth validating: a large place to inhabit, VR movement, finite gathering, and building.
+A Three.js VR exploration/building project for Meta Quest. The current **v0.4 WORLD STUDY** is deliberately focused on one problem: make the world itself feel large, distinctive, and worth inhabiting before adding more gameplay systems.
 
 **[Play Mineworld](https://permabulk69420-pixel.github.io/Mineworld/)** · [Build and deployment](https://github.com/permabulk69420-pixel/Mineworld/actions)
 
 ## Current build
 
-- **Journey is quality-first again.** The crude workbench, glowing portal chain, resonators, and decorative tool upgrades from the v0.2 prototype are dormant and do not appear in normal play.
-- Generator v2 replaces the tiny-island progression layout with one connected **First Light** landmass spanning well over 130 metres across its major dimensions.
-- The player starts in an open southern meadow with a long sightline into the landscape rather than inside a small prefab lookout or dense tree tunnel.
-- First Light contains cedar country, an open meadow, lake and stream, broad walkable caves, a northern ridge, western cliffs, elevation changes, and distant natural landmarks.
-- Fresh Journey starts with an empty pack. Only materials actually gathered become selectable/buildable; placing them consumes inventory.
-- Normal wood, soil, limestone, sand, foliage, and other basic materials can be gathered. Lumen crystal and deepstone remain intentionally unavailable until a future physical tool system deserves to unlock them.
-- There is **no visible pickaxe or fake hand tool** in Journey. The previous prototype attached a primitive sideways prop to both controllers while mining remained button-driven; that visual has been removed completely.
-- Gathering temporarily remains trigger/raycast-based. The next major interaction, after world scale is accepted in Quest, is one properly designed **one-handed physical mining tool**.
-- Walking, collision, stepping, jumping, head-relative locomotion, smooth/snap turning, teleporting, finite inventory, voxel removal/placement, local saves, and export/import remain functional.
+- The earlier v0.2 workbench/portal/resonator/tool-tier progression remains dormant. It is not the design direction.
+- First Light is still a finite starting region while the world architecture and art direction are rebuilt. Do not mistake the current region for the intended final world scale.
+- The old Minecraft-like natural presentation is being removed: generated block trees are gone, natural terrain uses a smoother visual surface over the editable voxel data, the grass/dirt/stone banding has been broken up, and the terrain atlas no longer uses a pixel-art/nearest-neighbour treatment.
+- First Light now uses an initial **wind-garden** language: sunmoss ground, blue shale, sparse rose-loam pockets, rock ribs, shoreline reeds, and procedural non-cubic sail flora. This is an art-direction experiment, not a locked final biome.
+- Natural vegetation is renderer-side procedural geometry. `Sailwood` / `Sailleaf` voxels remain available as player building materials but are not used to construct generated forests.
+- The next world expansion must introduce genuinely different biome-scale places rather than extending the starting biome forever.
+- Fresh Journey still starts with an empty pack. Gathering/building remain available as foundation mechanics, but there is no active crafting/progression loop to validate yet.
+- There is no visible fake pickaxe or decorative hand tool.
 - Creative mode remains an explicit `?creative=1` development/free-build harness with the full palette and flight.
 
 ## Quest controls
 
 | Action | Quest controllers |
 | --- | --- |
-| Move | Left stick |
+| Move | Left stick in Stick locomotion mode |
 | Look / turn | Head / right stick |
 | Gather | Hold right trigger |
 | Place selected carried material | Hold right grip |
 | Carried material | X next / left grip previous |
+| Wrist display | Y toggles |
 | Jump | A |
-| Teleport | Hold left trigger, aim, release |
+| Teleport | Optional locomotion mode selected in settings |
 
-The Journey wrist starts at **PACK EMPTY** and only shows materials you actually carry. It does not advertise dormant crafting/progression actions.
+Stick locomotion is the Journey default. Teleport is **not** active at the same time; select it explicitly in Controls & settings. Smooth/snap turning remains a separate preference. The wrist display is hidden by default and can be toggled with Y.
 
-On Quest, open the play link in the headset browser and choose **Enter VR**. Hand tracking is not implemented. Smooth turning is the default; snap turning is available in Controls & settings before entering VR.
+On Quest, open the play link in the headset browser and choose **Enter VR**. Hand tracking is not implemented.
 
 ## Saves
 
-The v0.3 foundation intentionally uses a new save slot:
+The visual-reset terrain uses a new save slot rather than silently applying old edits to changed geography:
 
-- v0.3 / generator v2: `mineworld.skyreach.save.v2`
+- v0.4 / generator v3: `mineworld.skyreach.save.v3`
+- v0.3 large-world foundation / generator v2: `mineworld.skyreach.save.v2`
 - earlier v0.1–v0.2 prototype: `mineworld.skyreach.save.v1`
 
-The old prototype save is left untouched rather than silently migrated into a fundamentally different landscape. Saves remain browser/device-local; use **Controls & settings → Export world** for backups.
+Both earlier save slots are left untouched. Saves remain browser/device-local; use **Controls & settings → Export world** for backups.
 
 ## Development standard
 
-Mineworld is now developed **one important feature at a time**. A technically functioning primitive is not enough to keep a feature in Journey. The current sequence is:
+The current milestone is **WORLD**. Do not add a grapple, pickaxe progression, crafting station, creature system, combat loop, or quest chain to compensate for a world that still feels small or derivative.
 
-1. validate world scale/composition in Quest;
-2. build one polished, one-handed physical mining interaction;
-3. only then consider a polished station/world object;
-4. grow progression from interactions that already meet the quality bar.
+The immediate sequence is:
 
-See [the direction](docs/DIRECTION.md) for the explicit quality criteria and [the development journal](docs/DEVELOPMENT.md) for the reset history.
+1. give the starting area a visual identity that does not immediately read as Minecraft;
+2. expand into multiple large biome-scale environments instead of repeating First Light;
+3. move toward deterministic chunk streaming/distant representation so scale is not constrained by keeping the whole world resident;
+4. validate scale, visual identity, biome transitions, and Quest performance in-headset;
+5. only then choose the first real gameplay system based on what is actually fun in that world.
+
+See [the direction](docs/DIRECTION.md) for the world acceptance test and [the development journal](docs/DEVELOPMENT.md) for iteration history.
 
 ## Development
 
@@ -73,8 +77,8 @@ npm run build
 npm run test:browser
 ```
 
-The current regression verifies the large generator-v2 foundation, empty Journey inventory, absence of old progression language/state, Creative rendering/flight, v2 saving/export, and browser/runtime errors. Its SwiftShader frame rate is **not** a Quest performance benchmark.
+The regression covers generator-v3 determinism, connected terrain, lake continuity, absence of generated WOOD/LEAVES forests, save-slot preservation, locomotion/wrist defaults, Journey/Creative rendering, v3 saving/export, and browser/runtime errors. SwiftShader frame rate is **not** a Quest performance benchmark.
 
 ## Deployment
 
-Code pushes to `main` run unit tests, production build, rendered browser checks, screenshot capture, and GitHub Pages deployment. Documentation-only pushes do not replace the runtime build. The stable play URL remains the same.
+Code pushes to `main` run unit tests, production build, rendered browser checks, screenshot capture, and GitHub Pages deployment. The stable play URL remains the same.
