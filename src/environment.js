@@ -75,12 +75,14 @@ export class Environment {
     const ring=new THREE.Mesh(new THREE.RingGeometry(46,68,96),new THREE.MeshBasicMaterial({color:0xf4dfba,transparent:true,opacity:.24,side:THREE.DoubleSide,depthWrite:false,fog:false}));
     ring.position.copy(planet.position);ring.rotation.set(1.25,.24,.27);scene.add(ring);
 
-    this.clouds=new THREE.InstancedMesh(new THREE.SphereGeometry(1,8,6),new THREE.MeshLambertMaterial({color:0xf2f0df,transparent:true,opacity:.58,depthWrite:false}),72);
+    // Clouds are atmospheric silhouettes, not lit scene props. Unlit material prevents a
+    // low/near ellipsoid from presenting its shadowed side as an enormous black polygon.
+    this.clouds=new THREE.InstancedMesh(new THREE.SphereGeometry(1,10,7),new THREE.MeshBasicMaterial({color:0xf2f0df,transparent:true,opacity:.42,depthWrite:false,fog:true}),72);
     const dummy=new THREE.Object3D();
     for(let i=0;i<72;i++){
-      const cluster=Math.floor(i/3),j=i%3,angle=hash(cluster,0,0,942)*Math.PI*2,radius=72+hash(cluster,2,0,71)*155;
-      dummy.position.set(Math.cos(angle)*radius+(j-1)*7,37+hash(cluster,1,0,21)*25,Math.sin(angle)*radius);
-      dummy.scale.set(13+hash(i,0,0,41)*21,2.6+hash(i,0,0,12)*4.2,8+hash(i,0,0,13)*16);
+      const cluster=Math.floor(i/3),j=i%3,angle=hash(cluster,0,0,942)*Math.PI*2,radius=118+hash(cluster,2,0,71)*180;
+      dummy.position.set(Math.cos(angle)*radius+(j-1)*8,58+hash(cluster,1,0,21)*34,Math.sin(angle)*radius);
+      dummy.scale.set(14+hash(i,0,0,41)*24,2.5+hash(i,0,0,12)*4.8,9+hash(i,0,0,13)*18);
       dummy.rotation.y=hash(i,0,0,18)*Math.PI;dummy.updateMatrix();this.clouds.setMatrixAt(i,dummy.matrix);
     }
     this.clouds.instanceMatrix.needsUpdate=true;scene.add(this.clouds);
