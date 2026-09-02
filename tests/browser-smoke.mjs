@@ -35,6 +35,20 @@ try{
   assert.equal(await page.locator('#play-button').isVisible(),false,'The public entry is VR only');
   assert.equal(await page.locator('#touch-controls').count(),0);
 
+  await page.getByRole('button',{name:'Controls & settings'}).click();
+  assert.equal(await page.locator('#locomotion').inputValue(),'stick');
+  assert.equal(await page.locator('#wrist').inputValue(),'hidden');
+  await page.locator('#locomotion').selectOption('teleport');
+  await page.locator('#wrist').selectOption('visible');
+  let vrSettings=await page.evaluate(()=>JSON.parse(localStorage.getItem('mineworld.settings.v1')));
+  assert.equal(vrSettings.locomotion,'teleport');assert.equal(vrSettings.wrist,'visible');
+  await page.locator('#locomotion').selectOption('stick');
+  await page.locator('#wrist').selectOption('hidden');
+  vrSettings=await page.evaluate(()=>JSON.parse(localStorage.getItem('mineworld.settings.v1')));
+  assert.equal(vrSettings.locomotion,'stick');assert.equal(vrSettings.wrist,'hidden');
+  await page.getByRole('button',{name:'Close settings'}).click();
+  notes.push('VR settings: stick movement is default, teleport is opt-in, and wrist display defaults hidden.');
+
   await page.setViewportSize({width:1280,height:800});
   await page.goto(url+'?test=1');await ready(page);
   await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
