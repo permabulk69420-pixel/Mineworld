@@ -3,6 +3,7 @@ import { BLOCK, PALETTE, BLOCK_SIZE } from './world/blocks.js';
 const STARTING_INVENTORY = Object.freeze({
   [BLOCK.PLANKS]: 8,
 });
+const INVENTORY_IDS = Object.freeze([...PALETTE, BLOCK.BASALT]);
 
 const HOME = Object.freeze({ x: 1.5 * BLOCK_SIZE, z: 25.5 * BLOCK_SIZE });
 const ARCH = Object.freeze({ x: 9.5 * BLOCK_SIZE, z: -10.5 * BLOCK_SIZE });
@@ -22,10 +23,10 @@ export const TOOL = Object.freeze({ HAND: 'hand', QUARRY: 'quarry', RESONANT: 'r
 
 export function createJourney(saved = null) {
   const inventory = {};
-  for (const id of PALETTE) inventory[id] = 0;
+  for (const id of INVENTORY_IDS) inventory[id] = 0;
   Object.assign(inventory, STARTING_INVENTORY);
   if (saved?.inventory) {
-    for (const id of PALETTE) {
+    for (const id of INVENTORY_IDS) {
       const value = saved.inventory[id];
       if (Number.isInteger(value) && value >= 0) inventory[id] = Math.min(MAX_STACK, value);
     }
@@ -51,7 +52,7 @@ export function snapshotJourney(journey = null) {
   const value = journey || createJourney();
   const tool = value.tool === TOOL.RESONANT ? TOOL.RESONANT : value.tool === TOOL.QUARRY ? TOOL.QUARRY : TOOL.HAND;
   return {
-    inventory: { ...value.inventory },
+    inventory: Object.fromEntries(INVENTORY_IDS.map(id=>[id,Math.max(0,Math.min(MAX_STACK,Number.isInteger(value.inventory?.[id])?value.inventory[id]:0))])),
     tool,
     archAwake: Boolean(value.archAwake),
     lumenReached: Boolean(value.lumenReached),
@@ -61,7 +62,7 @@ export function snapshotJourney(journey = null) {
 }
 
 export function collectBlock(journey, id) {
-  if (!PALETTE.includes(id)) return 0;
+  if (!INVENTORY_IDS.includes(id)) return 0;
   journey.inventory[id] = Math.min(MAX_STACK, (journey.inventory[id] || 0) + 1);
   if (id === BLOCK.BASALT && journey.tool === TOOL.RESONANT) journey.deepstoneReached = true;
   return journey.inventory[id];
