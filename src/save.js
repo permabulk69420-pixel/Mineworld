@@ -61,7 +61,14 @@ export function writeSave(storage, save) {
 export function readSettings(storage) {
   try {
     const value = JSON.parse(storage.getItem(SETTINGS_KEY) || '{}');
-    return { turning:value.turning === 'snap' ? 'snap' : 'smooth', sound:value.sound !== false,
-      quality:value.quality === 'high' ? 'high' : 'balanced' };
-  } catch { return { turning:'smooth', sound:true, quality:'balanced' }; }
+    return {
+      turning:value.turning === 'snap' ? 'snap' : 'smooth',
+      locomotion:value.locomotion === 'teleport' ? 'teleport' : 'stick',
+      wrist:value.wrist === 'visible' ? 'visible' : 'hidden',
+      sound:value.sound !== false,
+      quality:value.quality === 'high' ? 'high' : 'balanced',
+    };
+  } catch {
+    return { turning:'smooth', locomotion:'stick', wrist:'hidden', sound:true, quality:'balanced' };
+  }
 }
