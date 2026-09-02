@@ -67,6 +67,12 @@ test('generator v2 is repeatable, large, connected at key regions, and gives a s
   assert.equal(collides(a,{...home,y:home.y-.08}),true);
 });
 
+test('natural generation does not rebuild forests from player wood and leaf voxels',()=>{
+  const w=generateWorld(new VoxelWorld(DEFAULT_SEED));let wood=0,leaves=0;
+  for(const chunk of w.chunks.values())for(const id of chunk.data){if(id===B.WOOD)wood++;if(id===B.LEAVES)leaves++;}
+  assert.equal(wood,0);assert.equal(leaves,0);
+});
+
 test('lake basin is filled continuously to the same shoreline radius',()=>{
   const w=generateWorld(new VoxelWorld(DEFAULT_SEED));let checked=0;
   for(let x=LAKE.x-Math.ceil(LAKE.radius*1.2);x<=LAKE.x+Math.ceil(LAKE.radius*1.2);x++){
