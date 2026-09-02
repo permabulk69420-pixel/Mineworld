@@ -12,7 +12,7 @@ import { Environment } from './environment.js';
 import { Particles } from './particles.js';
 import { Sound } from './audio.js';
 import { UI } from './ui/ui.js';
-import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, updateJourney, journeyObjective } from './game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, updateJourney, archPortalActive, journeyObjective, LUMEN_HOLLOW } from './game.js';
 import { readSave, createSave, writeSave, validateSave, readSettings, SETTINGS_KEY } from './save.js';
 
 const $=id=>document.getElementById(id);
@@ -25,6 +25,7 @@ async function boot(){
   const world=new VoxelWorld(saved.data?.seed??DEFAULT_SEED);
   let writable=saved.writable,selected=saved.data?.selected??0,started=false,dirty=false,saveTimer=0;
   let lastMine=0,lastBuild=0,elapsed=0,frames=0,fps=0,statsTime=0,saveTime=0;
+  let mineKey='',mineStarted=0,lastBlockedMine=-10,lastPortal=-10;
   const params=new URLSearchParams(location.search),desktopTest=params.has('test'),creative=params.get('creative')==='1';
   const journey=createJourney(saved.data?.journey);
   const canvas=$('world');
@@ -89,6 +90,7 @@ async function boot(){
 
   await new Promise(resolve=>setTimeout(resolve,0));
   generateWorld(world);
+  const generatedArchBase=world.surface(9,-11)-11;
   if(saved.data)world.applyEdits(saved.data.edits);
   player.home();player.restore(saved.data?.player);
   if(!creative&&player.flying)player.toggleFlight();
@@ -97,22 +99,29 @@ async function boot(){
   while(world.dirty.size){worldRenderer.flush(14);await new Promise(resolve=>setTimeout(resolve,0));}
   const environment=new Environment(scene,world),particles=new Particles(scene);
   const xr=new XRControls(renderer,player,world,scene,{cycle,flight,home,teleport:()=>{sound.play('teleport');markDirty();}});
+  xr.updateTool(journey.tool,creative);
   const showcase=new THREE.PerspectiveCamera(57,innerWidth/innerHeight,.1,550);
   showcase.position.set(42,49,66);showcase.lookAt(-1,26,-7);
   const highlight=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(S*1.012,S*1.012,S*1.012)),new THREE.LineBasicMaterial({color:0xfff0b5,transparent:true,opacity:.85}));
   scene.add(highlight);highlight.visible=false;
   const ghost=new THREE.Mesh(new THREE.BoxGeometry(S*.99,S*.99,S*.99),new THREE.MeshBasicMaterial({color:0xcde8a6,transparent:true,opacity:.19,depthWrite:false}));
   scene.add(ghost);ghost.visible=false;
+  const portal=new THREE.Mesh(new THREE.PlaneGeometry(S*5.6,S*7.2),new THREE.MeshBasicMaterial({color:0x70f5df,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+  portal.position.set(9.5*S,(generatedArchBase+4.7)*S,-10.5*S);portal.renderOrder=3;portal.visible=false;scene.add(portal);
+  const portalRing=new THREE.Mesh(new THREE.RingGeometry(S*1.8,S*2.15,36),new THREE.MeshBasicMaterial({color:0xb8fff0,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+  portalRing.position.copy(portal.position);portalRing.scale.y=1.7;portalRing.renderOrder=4;portalRing.visible=false;scene.add(portalRing);
   const aimOrigin=new THREE.Vector3(),aimDirection=new THREE.Vector3(),cameraPosition=new THREE.Vector3();
   let target=null,placement=null,lastObjective='';
 
+  function resetMining(){mineKey='';mineStarted=0;highlight.scale.setScalar(1);highlight.material.opacity=.85;}
+
   function aim(){
-    if(renderer.xr.isPresenting){const ray=xr.ray();if(!ray){target=null;highlight.visible=ghost.visible=false;return;}aimOrigin.copy(ray.origin);aimDirection.copy(ray.direction);}
+    if(renderer.xr.isPresenting){const ray=xr.ray();if(!ray){target=null;highlight.visible=ghost.visible=false;resetMining();return;}aimOrigin.copy(ray.origin);aimDirection.copy(ray.direction);}
     else{player.camera.getWorldPosition(aimOrigin);player.camera.getWorldDirection(aimDirection);}
     target=voxelRaycast(world,aimOrigin,aimDirection,7.5);
     highlight.visible=!!target;ghost.visible=false;placement=null;
     ui.target(target?BLOCKS[target.id].name:'');
-    if(!target)return;
+    if(!target){resetMining();return;}
     highlight.position.set((target.x+.5)*S,(target.y+.5)*S,(target.z+.5)*S);
     const x=target.x+target.normal.x,y=target.y+target.normal.y,z=target.z+target.normal.z;
     const material=world.get(x,y,z);
@@ -124,13 +133,25 @@ async function boot(){
   }
 
   function actions(state){
-    if(state.mine&&target&&elapsed-lastMine>.17){
-      const {x,y,z,id}=target;
-      if(world.set(x,y,z,BLOCK.AIR,true)){
-        if(!creative)collectBlock(journey,id);
-        particles.burst(x,y,z,id);sound.play('mine',id===BLOCK.CRYSTAL);lastMine=elapsed;markDirty();aim();
+    if(state.mine&&target){
+      const {x,y,z,id}=target,key=`${x},${y},${z}`;
+      const info=creative?{allowed:true,duration:.17,message:''}:harvestInfo(journey,id);
+      if(!info.allowed){
+        resetMining();
+        if(elapsed-lastBlockedMine>1.15){lastBlockedMine=elapsed;ui.toast(info.message,2300);}
+      }else{
+        if(mineKey!==key){mineKey=key;mineStarted=elapsed;}
+        const progress=Math.min(1,(elapsed-mineStarted)/info.duration);
+        highlight.material.opacity=.48+progress*.5;highlight.scale.setScalar(1+progress*.055);
+        if(progress>=1&&elapsed-lastMine>.12){
+          if(world.set(x,y,z,BLOCK.AIR,true)){
+            if(!creative)collectBlock(journey,id);
+            particles.burst(x,y,z,id);sound.play('mine',id===BLOCK.CRYSTAL);lastMine=elapsed;markDirty();resetMining();aim();
+          }
+        }
       }
-    }else if(state.build&&placement&&elapsed-lastBuild>.22){
+    }else resetMining();
+    if(state.build&&placement&&elapsed-lastBuild>.22){
       const {x,y,z}=placement,id=PALETTE[selected];
       if(!creative&&!spendBlock(journey,id)){ui.toast(`No ${BLOCKS[id].name.toLowerCase()} in your pack.`);return;}
       if(world.set(x,y,z,id,true)){sound.play('build',id===BLOCK.CRYSTAL);lastBuild=elapsed;markDirty();aim();}
@@ -138,12 +159,31 @@ async function boot(){
     }
   }
 
+  function handleJourneyEvents(events){
+    for(const event of events){
+      if(event==='tool-crafted'){
+        sound.play('build');xr.updateTool(journey.tool,false);ui.toast('Quarry pick made. Lumen crystal can now be harvested.',6000);markDirty();
+      }
+      if(event==='arch-awake'){
+        sound.play('build',true);ui.toast('The Old Arch wakes. Step into the light.',6500);markDirty();
+      }
+      if(event==='lumen-reached'){
+        sound.play('build',true);ui.toast('Lumen Hollow discovered. The first passage is complete.',6500);markDirty();
+      }
+    }
+  }
+
   function progression(){
     if(creative)return 'Creative build mode';
-    const events=updateJourney(journey,player.getBody());
-    for(const event of events){
-      if(event==='arch-awake'){sound.play('build',true);ui.toast('The Old Arch wakes. Its lumen points toward a distant island.',6500);markDirty();}
-      if(event==='lumen-reached'){sound.play('build',true);ui.toast('Lumen Hollow discovered. The first passage is complete.',6500);markDirty();}
+    handleJourneyEvents(updateJourney(journey,player.getBody()));
+    if(archPortalActive(journey,player.getBody())&&elapsed-lastPortal>2.2){
+      const vx=Math.floor(LUMEN_HOLLOW.x/S),vz=Math.floor(LUMEN_HOLLOW.z/S);
+      const destination={x:LUMEN_HOLLOW.x,y:world.surface(vx,vz)*S,z:LUMEN_HOLLOW.z};
+      if(player.teleport(destination)){
+        lastPortal=elapsed;sound.play('teleport');particles.burst(vx,Math.max(0,Math.floor(destination.y/S)-1),vz,BLOCK.CRYSTAL);
+        ui.toast('The arch folds the cloud sea around you…',4200);markDirty();
+        handleJourneyEvents(updateJourney(journey,player.getBody()));
+      }
     }
     const objective=journeyObjective(journey);
     if(objective!==lastObjective){lastObjective=objective;if(started)ui.toast(objective,4200);}
@@ -160,8 +200,14 @@ async function boot(){
       const state=renderer.xr.isPresenting?xr.sample(dt,settings.turning):input.sample();
       const result=player.update(dt,state);if(result==='home'){ui.flight(false);ui.toast('The clouds carried you home.');markDirty();}
       player.rig.updateMatrixWorld(true);aim();actions(state);objective=progression();
-      xr.updateWrist(selected,player.flying,{creative,inventory:journey.inventory,objective});
-    }else{highlight.visible=ghost.visible=false;}
+      xr.updateTool(journey.tool,creative);
+      xr.updateWrist(selected,player.flying,{creative,inventory:journey.inventory,objective,tool:journey.tool});
+    }else{highlight.visible=ghost.visible=false;resetMining();}
+    portal.visible=portalRing.visible=!creative&&journey.archAwake&&!journey.lumenReached;
+    if(portal.visible){
+      portal.material.opacity=.25+Math.sin(elapsed*2.2)*.09;portalRing.material.opacity=.45+Math.sin(elapsed*1.6+1)*.12;
+      portalRing.rotation.z=elapsed*.18;
+    }
     worldRenderer.flush(renderer.xr.isPresenting?2:5);particles.update(dt);
     const camera=started?player.camera:showcase;
     if(!started&&!matchMedia('(prefers-reduced-motion: reduce)').matches){showcase.position.x=42+Math.sin(elapsed*.025)*2;showcase.lookAt(-1,26,-7);}
@@ -172,7 +218,7 @@ async function boot(){
       const p=player.getBody();let nearest=world.landmarks[0],distance=Infinity;
       for(const landmark of world.landmarks){const d=Math.hypot(p.x-landmark.x,p.z-landmark.z);if(d<distance){nearest=landmark;distance=d;}}
       ui.location(`${nearest.name} · ${creative?(player.flying?'Flying':'Creative'):'Journey'}`);
-      ui.debug(`${fps} FPS${renderer.xr.isPresenting?' · VR':''}\n${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles\n${worldRenderer.meshes.size} chunks · ${world.edits.size} block edits\nXYZ ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}\nYaw ${Math.round(player.rig.rotation.y*180/Math.PI)}° · Pitch ${Math.round(player.pitch*180/Math.PI)}°\n${creative?'Creative':objective} · Seed ${world.seed}`);
+      ui.debug(`${fps} FPS${renderer.xr.isPresenting?' · VR':''}\n${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString()} triangles\n${worldRenderer.meshes.size} chunks · ${world.edits.size} block edits\nXYZ ${p.x.toFixed(1)} / ${p.y.toFixed(1)} / ${p.z.toFixed(1)}\nYaw ${Math.round(player.rig.rotation.y*180/Math.PI)}° · Pitch ${Math.round(player.pitch*180/Math.PI)}°\n${creative?'Creative':`${journey.tool==='quarry'?'Quarry pick':'Field tool'} · ${objective}`} · Seed ${world.seed}`);
     }
     if(saveTime>15){saveTime=0;if(started&&(dirty||active))persist();}
   });
@@ -183,7 +229,7 @@ async function boot(){
   try{
     const available=!!navigator.xr&&await navigator.xr.isSessionSupported('immersive-vr');
     vrButton.disabled=!available;vrButton.textContent='Enter VR';
-    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, build, awaken the arch'):'Open in your Quest browser to step inside.';
+    $('vr-note').textContent=available?(creative?'Creative mode · unlimited materials':'Journey mode · gather, make tools, awaken the arch'):'Open in your Quest browser to step inside.';
   }catch{vrButton.disabled=true;vrButton.textContent='Enter VR';}
   vrButton.addEventListener('click',async()=>{
     if(renderer.xr.isPresenting)return;vrButton.disabled=true;
@@ -197,7 +243,7 @@ async function boot(){
   renderer.xr.addEventListener('sessionstart',()=>{
     started=true;ui.playing=true;input.enabled=false;input.clear();
     if(document.pointerLockElement)document.exitPointerLock();
-    player.setXR(true);xr.reset();ui.setMenu(false);ui.setXR(true);markDirty();
+    player.setXR(true);xr.reset();xr.updateTool(journey.tool,creative);ui.setMenu(false);ui.setXR(true);markDirty();
     if(!creative)ui.toast(journeyObjective(journey),5000);
   });
   renderer.xr.addEventListener('sessionend',()=>{
