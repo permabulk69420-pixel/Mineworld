@@ -141,7 +141,7 @@ export class XRControls {
     ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(`${BLOCKS[PALETTE[selected]].name}  ×${count}`,24,84);
     PALETTE.forEach((id,i)=>{ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(26+i*53,102,38,38);if(i===selected){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(22+i*53,98,46,46);}});
     ctx.font='600 18px system-ui';ctx.fillStyle='#d9e6df';ctx.fillText(objective.slice(0,52),24,177);
-    ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';ctx.fillText(game?.creative?'X: material · Y: flight · trigger mine · grip build':'Hold trigger: gather · grip: place · X: material',24,211);
+    ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';ctx.fillText(game?.creative?'X: material · Y: flight · trigger mine · grip build':'Trigger: gather · grip: place · X: material · Y: craft/use',24,211);
     ctx.font='17px system-ui';ctx.fillStyle='#819999';ctx.fillText('Left trigger: teleport · right stick: turn',24,238);
     this.wristTexture.needsUpdate=true;
   }
