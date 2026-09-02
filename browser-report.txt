@@ -1,29 +1,10 @@
 Foundation Journey: large-world start rendered with empty pack and no bench/portal/tool progression exposed.
-MINEWORLD
-First Light · Flying
-Saved on this device
-Flying F
-☰
-Lumen crystal
-1
-2
-3
-4
-5
-6
-7
-8
-9
-MINE LMB · BUILD RMB · MENU ESC
-2 FPS
-233 draw calls · 207,146 triangles
-448 chunks · 0 block edits
-XYZ 0.4 / 25.5 / 25.3
+Creative developer mode: large-world WebGL render, pointer lock, flight, material selection, v2 save, and export passed.
+Desktop diagnostics: 4 FPS
+262 draw calls · 220,038 triangles
+450 chunks · 0 block edits
+XYZ 24.4 / 21.8 / 39.1
 Yaw 0° · Pitch -5°
 Creative · Seed 734921
-locator.click: Timeout 30000ms exceeded.
-Call log:
-  - waiting for getByRole('button', { name: 'Controls & settings' })
-
-    at /home/runner/work/Mineworld/Mineworld/tests/browser-smoke.mjs:65:63
+Actual Quest scale and interaction still require headset validation.
 Browser errors:
