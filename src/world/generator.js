@@ -13,6 +13,8 @@ export const ISLANDS = [
   { x: 32, z: 52, rx: 90, rz: 82, top: 35, depth: 40, name: 'First Light' },
 ];
 
+export const LAKE = Object.freeze({ x: -22, z: 17, radius: 16, waterLevel: 33 });
+
 function crown(world, x, y, z, radius, seed) {
   for (let dx=-radius;dx<=radius;dx++) for (let dz=-radius;dz<=radius;dz++) for (let dy=-2;dy<=2;dy++) {
     if ((dx*dx+dz*dz)/(radius*radius)+dy*dy/7>1.14) continue;
@@ -55,33 +57,45 @@ function topHeight(x,z,shape,seed) {
 export function generateWorld(world, version=GENERATOR_VERSION) {
   if(version!==2) throw new Error('This build expects the large-world generator.');
   const {seed}=world;world.surfaces=[];world.landmarks=[];
-  const columns=[],lakeX=-22,lakeZ=17,waterLevel=33;
+  const columns=[];
 
   for(let x=-104;x<=106;x++) for(let z=-91;z<=91;z++){
     const shape=landShape(x,z,seed);if(!shape.inside)continue;
     let top=topHeight(x,z,shape,seed);
-    const lakeDistance=Math.hypot((x-lakeX)/1.2,z-lakeZ);
-    if(lakeDistance<16) top=Math.min(top,30+Math.floor(lakeDistance*.16));
+    const lakeDistance=Math.hypot((x-LAKE.x)/1.2,z-LAKE.z);
+    if(lakeDistance<LAKE.radius) top=Math.min(top,30+Math.floor(lakeDistance*.16));
     const thickness=Math.max(10,Math.floor(18+shape.influence*30)),bottom=Math.max(2,top-thickness);
     for(let y=bottom;y<=top;y++){
       const caveA=y<top-4&&y>bottom+3&&Math.hypot((x+18)*.42,y-24)<4.4&&z>-30&&z<34;
       const caveB=y<top-5&&y>bottom+4&&Math.hypot((z+31)*.45,y-29)<4.8&&x>8&&x<65;
       if(caveA||caveB)continue;
       let id=y===top?B.GRASS:y>=top-3?B.SOIL:y<top-14?B.BASALT:B.STONE;
-      if(lakeDistance<18&&y>=top-1)id=B.SAND;
+      if(lakeDistance<LAKE.radius+2&&y>=top-1)id=B.SAND;
       if(y===top&&(top>43||Math.abs(noise2(x*.08,z*.08,seed+812))>.78)&&hash(x,y,z,seed+12)>.46)id=B.STONE;
       world.set(x,y,z,id);
     }
-    if(lakeDistance<14) for(let y=top+1;y<=waterLevel;y++) world.set(x,y,z,B.WATER);
+    // The basin and water use the same radius. The previous v2 pass carved the basin
+    // farther than it filled it, leaving a visibly dry ring/gaps at the shoreline.
+    if(lakeDistance<LAKE.radius&&top<LAKE.waterLevel){
+      for(let y=top+1;y<=LAKE.waterLevel;y++) world.set(x,y,z,B.WATER);
+    }
     columns.push({x,z,top,lakeDistance});world.surfaces.push({x,y:top,z});
   }
 
+  // A continuous three-voxel-wide stream leaves the lake. Each successive centre cell
+  // overlaps the previous width so diagonal meanders cannot open one-voxel holes.
+  let previousZ=LAKE.z;
   for(let x=-23;x>=-87;x--){
-    const z=17+Math.round(Math.sin((x+23)*.13)*2);
-    for(let dz=-1;dz<=1;dz++){
-      const y=world.surface(x,z+dz);if(y<2)continue;
-      world.set(x,y,z+dz,B.SAND);if(y+1<=waterLevel)world.set(x,y+1,z+dz,B.WATER);
+    const targetZ=LAKE.z+Math.round(Math.sin((x+23)*.13)*2);
+    const step=Math.sign(targetZ-previousZ);
+    for(let centerZ=previousZ;;centerZ+=step){
+      for(let dz=-1;dz<=1;dz++){
+        const z=centerZ+dz,y=world.surface(x,z);if(y<2)continue;
+        world.set(x,y-1,z,B.SAND);world.set(x,y,z,B.SAND);world.set(x,y+1,z,B.WATER);
+      }
+      if(centerZ===targetZ||step===0)break;
     }
+    previousZ=targetZ;
   }
 
   for(const {x,z,top,lakeDistance} of columns){
@@ -113,7 +127,7 @@ export function generateWorld(world, version=GENERATOR_VERSION) {
     {name:'First Light',x:32,z:52},
     {name:'Cedar Vale',x:-48,z:-5},
     {name:'North Ridge',x:37,z:-52},
-    {name:'Lake Country',x:-22,z:17},
+    {name:'Lake Country',x:LAKE.x,z:LAKE.z},
     {name:'West Cliffs',x:-72,z:-4},
   ]){
     const y=world.surface(landmark.x,landmark.z);
