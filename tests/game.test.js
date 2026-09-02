@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BLOCK, BLOCK_SIZE } from '../src/world/blocks.js';
-import { createJourney, collectBlock, canPlace, spendBlock, harvestInfo, quarryRecipeReady, craftQuarryPick, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, TOOL, HOLLOW_RESONATORS, HOLLOW_FORGE } from '../src/game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, harvestInfo, quarryRecipeReady, craftQuarryPick, useJourney, resonatorCount, resonatorsReady, updateJourney, archPortalActive, hollowPortalActive, quarryForgePortalActive, quarryReturnPortalActive, journeyObjective, TOOL, HOLLOW_RESONATORS, HOLLOW_FORGE, OLD_QUARRY } from '../src/game.js';
 
 test('Journey mode gathers finite materials and spends them when building', () => {
   const journey = createJourney();
@@ -54,7 +54,7 @@ test('six lumen crystals awaken a persistent two-way passage to Lumen Hollow', (
   assert.match(journeyObjective(journey), /Hollow resonators/);
 });
 
-test('Lumen Hollow consumes three crystals to wake resonators and temper a deepstone tool', () => {
+test('Lumen Hollow consumes three crystals, tempers a deepstone tool, and opens Old Quarry', () => {
   const journey=createJourney({
     tool:TOOL.QUARRY,archAwake:true,lumenReached:true,
     inventory:{[BLOCK.CRYSTAL]:3},resonators:[false,false,false],
@@ -78,16 +78,27 @@ test('Lumen Hollow consumes three crystals to wake resonators and temper a deeps
   assert.deepEqual(temper,{ok:true,event:'tool-resonant'});
   assert.equal(journey.tool,TOOL.RESONANT);
   assert.equal(harvestInfo(journey,BLOCK.BASALT).allowed,true);
-  assert.match(journeyObjective(journey),/first deepstone/);
+  assert.match(journeyObjective(journey),/beneath the Hollow/);
   collectBlock(journey,BLOCK.BASALT);
+  assert.equal(journey.inventory[BLOCK.BASALT],1);
   assert.equal(journey.deepstoneReached,true);
-  assert.match(journeyObjective(journey),/Old Quarry/);
+  assert.equal(canPlace(journey,BLOCK.BASALT),false,'deepstone is a carried progression resource, not a hotbar block');
+  assert.equal(quarryForgePortalActive(journey,HOLLOW_FORGE),true);
+  assert.match(journeyObjective(journey),/new passage/);
+
+  const quarryEvents=updateJourney(journey,OLD_QUARRY);
+  assert.deepEqual(quarryEvents,['quarry-reached']);
+  assert.equal(journey.quarryReached,true);
+  assert.equal(quarryReturnPortalActive(journey,OLD_QUARRY),true);
+  assert.match(journeyObjective(journey),/Old Quarry reached/);
 });
 
-test('resonant progression restores without moving an upgraded save backwards', () => {
-  const restored=createJourney({tool:TOOL.RESONANT,archAwake:true,lumenReached:true,resonators:[false,false,false],deepstoneReached:true});
+test('resonant and quarry progression restore without moving an upgraded save backwards', () => {
+  const restored=createJourney({tool:TOOL.RESONANT,archAwake:true,lumenReached:true,resonators:[false,false,false],deepstoneReached:true,quarryReached:true,inventory:{[BLOCK.BASALT]:3}});
   assert.equal(restored.tool,TOOL.RESONANT);
   assert.deepEqual(restored.resonators,[true,true,true]);
   assert.equal(restored.deepstoneReached,true);
+  assert.equal(restored.quarryReached,true);
+  assert.equal(restored.inventory[BLOCK.BASALT],3);
   assert.equal(harvestInfo(restored,BLOCK.BASALT).allowed,true);
 });
