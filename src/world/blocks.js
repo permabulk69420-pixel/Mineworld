@@ -24,7 +24,7 @@ export const BLOCK_SIZE = 0.75;
 export const CHUNK_SIZE = 16;
 export const WORLD_LIMIT = 128;
 export const HEIGHT_LIMIT = 128;
-export const GENERATOR_VERSION = 2;
+export const GENERATOR_VERSION = 3;
 export const DEFAULT_SEED = 734921;
 export const isSolid = id => Boolean(BLOCKS[id]?.solid);
 export const isOpaque = id => Boolean(BLOCKS[id]?.opaque);
