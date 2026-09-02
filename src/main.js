@@ -12,7 +12,7 @@ import { Environment } from './environment.js';
 import { Particles } from './particles.js';
 import { Sound } from './audio.js';
 import { UI } from './ui/ui.js';
-import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, updateJourney, archPortalActive, journeyObjective, LUMEN_HOLLOW } from './game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, refundBlock, harvestInfo, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, ARCH, LUMEN_HOLLOW } from './game.js';
 import { readSave, createSave, writeSave, validateSave, readSettings, SETTINGS_KEY } from './save.js';
 
 const $=id=>document.getElementById(id);
@@ -91,6 +91,7 @@ async function boot(){
   await new Promise(resolve=>setTimeout(resolve,0));
   generateWorld(world);
   const generatedArchBase=world.surface(9,-11)-11;
+  const generatedHollowGround=world.surface(63,-82);
   if(saved.data)world.applyEdits(saved.data.edits);
   player.home();player.restore(saved.data?.player);
   if(!creative&&player.flying)player.toggleFlight();
@@ -107,9 +108,19 @@ async function boot(){
   const ghost=new THREE.Mesh(new THREE.BoxGeometry(S*.99,S*.99,S*.99),new THREE.MeshBasicMaterial({color:0xcde8a6,transparent:true,opacity:.19,depthWrite:false}));
   scene.add(ghost);ghost.visible=false;
   const portal=new THREE.Mesh(new THREE.PlaneGeometry(S*5.6,S*7.2),new THREE.MeshBasicMaterial({color:0x70f5df,transparent:true,opacity:.34,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
-  portal.position.set(9.5*S,(generatedArchBase+4.7)*S,-10.5*S);portal.renderOrder=3;portal.visible=false;scene.add(portal);
+  portal.position.set(ARCH.x,(generatedArchBase+4.7)*S,ARCH.z);portal.renderOrder=3;portal.visible=false;scene.add(portal);
   const portalRing=new THREE.Mesh(new THREE.RingGeometry(S*1.8,S*2.15,36),new THREE.MeshBasicMaterial({color:0xb8fff0,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
   portalRing.position.copy(portal.position);portalRing.scale.y=1.7;portalRing.renderOrder=4;portalRing.visible=false;scene.add(portalRing);
+  const hollowWaystone=new THREE.Group();
+  hollowWaystone.position.set(LUMEN_HOLLOW.x,generatedHollowGround*S,LUMEN_HOLLOW.z);
+  const waystoneRing=new THREE.Mesh(new THREE.TorusGeometry(S*1.55,S*.11,8,28),new THREE.MeshBasicMaterial({color:0x8cf6e1,transparent:true,opacity:.68,depthWrite:false,blending:THREE.AdditiveBlending}));
+  waystoneRing.position.y=S*2.05;hollowWaystone.add(waystoneRing);
+  const waystoneCore=new THREE.Mesh(new THREE.CircleGeometry(S*1.33,32),new THREE.MeshBasicMaterial({color:0x5de0d2,transparent:true,opacity:.23,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
+  waystoneCore.position.y=S*2.05;hollowWaystone.add(waystoneCore);
+  for(const x of [-S*1.75,S*1.75]){
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(S*.13,S*.2,S*3.3,7),new THREE.MeshLambertMaterial({color:0x667b79}));post.position.set(x,S*1.65,0);hollowWaystone.add(post);
+  }
+  hollowWaystone.visible=false;scene.add(hollowWaystone);
   const aimOrigin=new THREE.Vector3(),aimDirection=new THREE.Vector3(),cameraPosition=new THREE.Vector3();
   let target=null,placement=null,lastObjective='';
 
@@ -168,21 +179,33 @@ async function boot(){
         sound.play('build',true);ui.toast('The Old Arch wakes. Step into the light.',6500);markDirty();
       }
       if(event==='lumen-reached'){
-        sound.play('build',true);ui.toast('Lumen Hollow discovered. The first passage is complete.',6500);markDirty();
+        sound.play('build',true);ui.toast('Lumen Hollow discovered. A return waystone answers the arch.',6500);markDirty();
       }
     }
+  }
+
+  function surfaceDestination(x,z){
+    const vx=Math.floor(x/S),vz=Math.floor(z/S);
+    return {x,y:world.surface(vx,vz)*S,z,vx,vz};
+  }
+
+  function travel(destination,message){
+    if(!player.teleport(destination))return false;
+    lastPortal=elapsed;sound.play('teleport');particles.burst(destination.vx,Math.max(0,Math.floor(destination.y/S)-1),destination.vz,BLOCK.CRYSTAL);
+    ui.toast(message,4200);markDirty();return true;
   }
 
   function progression(){
     if(creative)return 'Creative build mode';
     handleJourneyEvents(updateJourney(journey,player.getBody()));
-    if(archPortalActive(journey,player.getBody())&&elapsed-lastPortal>2.2){
-      const vx=Math.floor(LUMEN_HOLLOW.x/S),vz=Math.floor(LUMEN_HOLLOW.z/S);
-      const destination={x:LUMEN_HOLLOW.x,y:world.surface(vx,vz)*S,z:LUMEN_HOLLOW.z};
-      if(player.teleport(destination)){
-        lastPortal=elapsed;sound.play('teleport');particles.burst(vx,Math.max(0,Math.floor(destination.y/S)-1),vz,BLOCK.CRYSTAL);
-        ui.toast('The arch folds the cloud sea around you…',4200);markDirty();
-        handleJourneyEvents(updateJourney(journey,player.getBody()));
+    if(elapsed-lastPortal>2.2){
+      const body=player.getBody();
+      if(archPortalActive(journey,body)){
+        const destination=surfaceDestination(LUMEN_HOLLOW.x,LUMEN_HOLLOW.z+3*S);
+        if(travel(destination,'The arch folds the cloud sea around you…'))handleJourneyEvents(updateJourney(journey,player.getBody()));
+      }else if(hollowPortalActive(journey,body)){
+        const destination=surfaceDestination(ARCH.x,ARCH.z+3*S);
+        travel(destination,'The waystone answers. First Light returns around you.');
       }
     }
     const objective=journeyObjective(journey);
@@ -203,10 +226,14 @@ async function boot(){
       xr.updateTool(journey.tool,creative);
       xr.updateWrist(selected,player.flying,{creative,inventory:journey.inventory,objective,tool:journey.tool});
     }else{highlight.visible=ghost.visible=false;resetMining();}
-    portal.visible=portalRing.visible=!creative&&journey.archAwake&&!journey.lumenReached;
+    portal.visible=portalRing.visible=!creative&&journey.archAwake;
+    hollowWaystone.visible=!creative&&journey.lumenReached;
     if(portal.visible){
       portal.material.opacity=.25+Math.sin(elapsed*2.2)*.09;portalRing.material.opacity=.45+Math.sin(elapsed*1.6+1)*.12;
       portalRing.rotation.z=elapsed*.18;
+    }
+    if(hollowWaystone.visible){
+      waystoneRing.rotation.y=elapsed*.28;waystoneCore.material.opacity=.18+Math.sin(elapsed*2)*.07;
     }
     worldRenderer.flush(renderer.xr.isPresenting?2:5);particles.update(dt);
     const camera=started?player.camera:showcase;
