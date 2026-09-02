@@ -15,14 +15,14 @@ function makeBladeGeometry(){
 function makeSailGeometry(){
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute([
-    -1.9,0,0, -.7,.5,.13, 1.95,.12,0,
-    -1.9,0,0, 1.95,.12,0, -.55,-.46,-.12,
+    -1.25,0,0, -.25,.72,.12, 1.4,.12,0,
+    -1.25,0,0, 1.4,.12,0, -.18,-.68,-.11,
   ],3));
   geometry.computeVertexNormals();return geometry;
 }
 
 function buildGroundVeil(world){
-  const positions=[],colors=[],indices=[];let vertices=0;
+  const positions=[],colors=[],indices=[],vertexMap=new Map();
   const cornerHeight=(gx,gz)=>{
     let highest=0;
     for(const dx of [-1,0])for(const dz of [-1,0]){
@@ -31,18 +31,20 @@ function buildGroundVeil(world){
     }
     return highest;
   };
+  const vertex=(gx,gz,h)=>{
+    const key=`${gx},${gz},${h}`;if(vertexMap.has(key))return vertexMap.get(key);
+    const i=positions.length/3,undulation=(hash(gx,h,gz,world.seed+717)-.5)*.025;
+    positions.push(gx*S,h*S+.02+undulation,gz*S);
+    const v=.88+hash(gx,h,gz,world.seed+720)*.16;
+    colors.push(.36*v,.43*v,.20*v);vertexMap.set(key,i);return i;
+  };
   for(const {x,y,z} of world.surfaces){
     if(world.get(x,y,z)!==BLOCK.GRASS)continue;
     const local=y+1;
-    const h00=cornerHeight(x,z)||local,h10=cornerHeight(x+1,z)||local,h11=cornerHeight(x+1,z+1)||local,h01=cornerHeight(x,z+1)||local;
-    const hs=[h00,h10,h11,h01].map(h=>Math.max(local,h));
-    const points=[[x,hs[0],z],[x+1,hs[1],z],[x+1,hs[2],z+1],[x,hs[3],z+1]];
-    for(let i=0;i<4;i++){
-      const [px,py,pz]=points[i];positions.push(px*S,py*S+.018,pz*S);
-      const v=.86+hash(px,Math.floor(py),pz,world.seed+720)*.16;
-      colors.push(.63*v,.67*v,.42*v);
-    }
-    indices.push(vertices,vertices+1,vertices+2,vertices,vertices+2,vertices+3);vertices+=4;
+    const h00=Math.max(local,cornerHeight(x,z)||local),h10=Math.max(local,cornerHeight(x+1,z)||local);
+    const h11=Math.max(local,cornerHeight(x+1,z+1)||local),h01=Math.max(local,cornerHeight(x,z+1)||local);
+    const a=vertex(x,z,h00),b=vertex(x+1,z,h10),c=vertex(x+1,z+1,h11),d=vertex(x,z+1,h01);
+    indices.push(a,b,c,a,c,d);
   }
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
@@ -88,18 +90,14 @@ export class Environment {
     const motesGeometry=new THREE.BufferGeometry();motesGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
     this.motes=new THREE.Points(motesGeometry,new THREE.PointsMaterial({color:0xf0e7aa,size:.06,transparent:true,opacity:.55,depthWrite:false}));scene.add(this.motes);
 
-    // A smooth visual skin drapes only untouched natural sunmoss. Collision/editing remain voxel based.
-    // It conceals the staircase silhouette without changing the underlying mutable world model.
     this.groundVeil=buildGroundVeil(world);scene.add(this.groundVeil);
 
     const bladeGeometry=makeBladeGeometry();
     this.grass=new THREE.InstancedMesh(bladeGeometry,new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide}),3400);
     this.grass.frustumCulled=false;scene.add(this.grass);
 
-    // First Light flora is deliberately not a cube trunk with a leaf crown. Slender leaning
-    // stems carry a few giant blade-like sails, producing a wind-garden silhouette instead.
-    this.trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.11,.25,4.8,6,1),new THREE.MeshLambertMaterial({color:0x756451,flatShading:true}),220);
-    this.sails=new THREE.InstancedMesh(makeSailGeometry(),new THREE.MeshStandardMaterial({color:0x829276,roughness:1,emissive:0x182218,emissiveIntensity:.35,side:THREE.DoubleSide,flatShading:true}),600);
+    this.trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.10,.22,4.4,6,1),new THREE.MeshLambertMaterial({color:0x756451,flatShading:true}),210);
+    this.sails=new THREE.InstancedMesh(makeSailGeometry(),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}),520);
     this.trunks.frustumCulled=false;this.sails.frustumCulled=false;scene.add(this.trunks,this.sails);
 
     this.reeds=new THREE.InstancedMesh(bladeGeometry,new THREE.MeshLambertMaterial({color:0xb6a765,side:THREE.DoubleSide}),900);
@@ -115,17 +113,17 @@ export class Environment {
       const wx=(x+.5)*S,wz=(z+.5)*S,base=(y+1)*S,lake=Math.hypot((x-LAKE.x)/1.2,z-LAKE.z);
       const spawnDistance=Math.hypot(x-32,z-52);
 
-      if(lake>21&&spawnDistance>11&&x%7===0&&z%7===0&&hash(x,0,z,this.world.seed+85)>.66&&ti<220){
-        const height=.85+hash(x,y,z,this.world.seed+510)*1.0,lean=.14+(hash(x,2,z,818)-.5)*.12,angle=-.55+(hash(x,3,z,819)-.5)*.34;
-        trunk.position.set(wx+hash(x,4,z,821)*.35,base+2.4*height,wz+hash(x,5,z,823)*.35);
-        trunk.scale.set(.8+height*.08,height,.8+height*.08);trunk.rotation.set(lean,angle,-.12);trunk.updateMatrix();this.trunks.setMatrixAt(ti++,trunk.matrix);
-        const top=base+4.35*height,sailCount=2+Math.floor(hash(x,y,z,825)*2);
-        for(let k=0;k<sailCount&&li<600;k++){
-          const phase=angle+(k-(sailCount-1)/2)*.72;
-          leaf.position.set(wx+Math.cos(phase)*(.22+k*.08),top-.25+k*.2,wz+Math.sin(phase)*(.22+k*.08));
-          leaf.rotation.set((hash(x,k,z,831)-.5)*.22,phase,.92+(hash(x,k,z,833)-.5)*.34);
-          const scale=(1.05+hash(x,k,z,835)*.9)*height;leaf.scale.set(scale,.9+hash(x,k,z,837)*.32,scale);leaf.updateMatrix();this.sails.setMatrixAt(li,leaf.matrix);
-          leafColor.set(hash(x,k,z,839)>.72?0xb09b63:hash(x,k,z,841)>.42?0x7f956f:0x607f72);this.sails.setColorAt(li,leafColor);li++;
+      if(lake>21&&spawnDistance>11&&x%7===0&&z%7===0&&hash(x,0,z,this.world.seed+85)>.68&&ti<210){
+        const height=.82+hash(x,y,z,this.world.seed+510)*.78,lean=.12+(hash(x,2,z,818)-.5)*.10,angle=-.55+(hash(x,3,z,819)-.5)*.34;
+        trunk.position.set(wx+hash(x,4,z,821)*.35,base+2.2*height,wz+hash(x,5,z,823)*.35);
+        trunk.scale.set(.8+height*.07,height,.8+height*.07);trunk.rotation.set(lean,angle,-.10);trunk.updateMatrix();this.trunks.setMatrixAt(ti++,trunk.matrix);
+        const top=base+4.0*height,sailCount=2+Math.floor(hash(x,y,z,825)*2);
+        for(let k=0;k<sailCount&&li<520;k++){
+          const phase=angle+(k-(sailCount-1)/2)*.78;
+          leaf.position.set(wx+Math.cos(phase)*(.18+k*.05),top-.15+k*.18,wz+Math.sin(phase)*(.18+k*.05));
+          leaf.rotation.set((hash(x,k,z,831)-.5)*.18,phase,.54+(hash(x,k,z,833)-.5)*.28);
+          const scale=(.72+hash(x,k,z,835)*.55)*height;leaf.scale.set(scale,.92+hash(x,k,z,837)*.22,scale);leaf.updateMatrix();this.sails.setMatrixAt(li,leaf.matrix);
+          leafColor.set(hash(x,k,z,839)>.72?0xb59c67:hash(x,k,z,841)>.42?0x82966f:0x638474);this.sails.setColorAt(li,leafColor);li++;
         }
       }
 
