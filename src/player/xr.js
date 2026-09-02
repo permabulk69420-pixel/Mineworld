@@ -29,7 +29,9 @@ export class XRControls {
       head.position.set(0,0.085,-0.025);grip.add(head);
       const pick=new THREE.Mesh(new THREE.ConeGeometry(0.022,0.18,5),new THREE.MeshLambertMaterial({color:0xb9c8c3}));
       pick.rotation.z=Math.PI/2;pick.position.set(0.085,0.09,-0.028);pick.visible=false;grip.add(pick);
-      this.controllers.push({controller,grip,beam,head,pick});
+      const resonance=new THREE.Mesh(new THREE.TorusGeometry(0.042,0.006,6,18),new THREE.MeshBasicMaterial({color:0x9dffe9,transparent:true,opacity:.82,depthWrite:false,blending:THREE.AdditiveBlending}));
+      resonance.position.set(0,0.087,-0.026);resonance.rotation.x=Math.PI/2;resonance.visible=false;grip.add(resonance);
+      this.controllers.push({controller,grip,beam,head,pick,resonance});
     }
     this.wristCanvas=document.createElement('canvas');this.wristCanvas.width=512;this.wristCanvas.height=256;
     this.wristTexture=new THREE.CanvasTexture(this.wristCanvas);this.wristTexture.colorSpace=THREE.SRGBColorSpace;
@@ -121,18 +123,22 @@ export class XRControls {
 
   updateTool(tool,creative=false){
     const key=`${tool}:${creative}`;if(this.toolKey===key)return;this.toolKey=key;
-    const quarry=creative||tool==='quarry';
+    const resonant=!creative&&tool==='resonant';
+    const quarry=creative||tool==='quarry'||resonant;
     for(const info of this.controllers){
       info.pick.visible=quarry;
-      info.head.material.color.set(quarry?0xb8c6bf:0x88e6c7);
+      info.resonance.visible=resonant;
+      info.pick.material.color.set(resonant?0xd8fff6:0xb9c8c3);
+      info.head.material.color.set(resonant?0x79e9d1:quarry?0xb8c6bf:0x88e6c7);
       info.head.scale.set(quarry?1.35:1,quarry?1.15:1,quarry?0.8:1);
+      info.resonance.scale.setScalar(resonant?1.12:1);
     }
   }
 
   updateWrist(selected,flying,game=null){
     const count=game?.creative?'∞':game?.inventory?.[PALETTE[selected]]??0;
     const objective=game?.creative?'Creative build mode':game?.objective||'Explore Skyreach';
-    const tool=game?.creative?'BUILDER TOOL':game?.tool==='quarry'?'QUARRY PICK':'FIELD TOOL';
+    const tool=game?.creative?'BUILDER TOOL':game?.tool==='resonant'?'RESONANT PICK':game?.tool==='quarry'?'QUARRY PICK':'FIELD TOOL';
     const key=`${selected}:${flying}:${count}:${objective}:${tool}`;if(this.wristKey===key)return;this.wristKey=key;
     const ctx=this.wristCanvas.getContext('2d');ctx.clearRect(0,0,512,256);
     ctx.fillStyle='rgba(12,30,35,.92)';ctx.beginPath();ctx.roundRect(0,0,512,256,22);ctx.fill();
