@@ -121,7 +121,11 @@ export function updateJourney(journey, body) {
 }
 
 export function archPortalActive(journey, body) {
-  return journey.archAwake && !journey.lumenReached && Math.hypot(body.x - ARCH.x, body.z - ARCH.z) < 1.6;
+  return journey.archAwake && Math.hypot(body.x - ARCH.x, body.z - ARCH.z) < 1.6;
+}
+
+export function hollowPortalActive(journey, body) {
+  return journey.archAwake && journey.lumenReached && Math.hypot(body.x - LUMEN_HOLLOW.x, body.z - LUMEN_HOLLOW.z) < 1.6;
 }
 
 export function journeyObjective(journey) {
@@ -137,7 +141,7 @@ export function journeyObjective(journey) {
     return 'Carry 6 lumen crystal into the Old Arch';
   }
   if (!journey.lumenReached) return 'The Old Arch is awake · step through the light';
-  return 'Lumen Hollow reached · explore what the passage opened';
+  return 'Lumen Hollow reached · return waystone active · explore';
 }
 
 export { REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, ARCH, LUMEN_HOLLOW };
