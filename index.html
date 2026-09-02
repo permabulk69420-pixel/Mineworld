@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#142a31" />
-  <meta name="description" content="A quiet VR voxel world above the clouds. Explore, mine, and build in your Meta Quest headset." />
+  <meta name="description" content="A solitary VR voxel adventure above the clouds. Gather, build, restore old passages, and explore in your Meta Quest headset." />
   <title>Mineworld · Skyreach</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23b5db94' d='M16 2 30 10 16 18 2 10Z'/%3E%3Cpath fill='%235d987f' d='m2 10 14 8v14L2 24Z'/%3E%3Cpath fill='%23385559' d='m30 10-14 8v14l14-8Z'/%3E%3C/svg%3E" />
 </head>
@@ -17,26 +17,26 @@
   <main id="welcome">
     <section id="welcome-card" class="panel" aria-labelledby="welcome-title">
       <div class="eyebrow"><span></span> CHAPTER 01 · SKYREACH</div>
-      <h1 id="welcome-title">A world<br>of your own.</h1>
-      <p id="welcome-copy">Wander the islands. Follow the light.<br>Make a home above the clouds.</p>
+      <h1 id="welcome-title">A world<br>worth returning to.</h1>
+      <p id="welcome-copy">Gather what the islands give you. Wake the old paths.<br>Build somewhere you want to call home.</p>
       <div class="start-actions"><button id="vr-button" class="primary" disabled>Checking VR…</button><button id="play-button" class="text-button" disabled hidden><span id="play-label">Growing the islands…</span><span aria-hidden="true">↗</span></button></div>
       <p id="vr-note" class="small">Open in your Quest browser to step inside.</p>
       <button id="controls-button" class="text-button">Controls & settings <span aria-hidden="true">↗</span></button>
-      <div class="world-meta"><span class="status-dot"></span> CREATIVE · v0.1 <span class="meta-divider">/</span> <span id="world-seed">SEED 734921</span></div>
+      <div class="world-meta"><span class="status-dot"></span> JOURNEY · v0.2 <span class="meta-divider">/</span> <span id="world-seed">SEED 734921</span></div>
     </section>
     <div class="scene-caption"><span class="fine-line"></span><div>FIRST LIGHT<span>THE SKYREACH ISLES</span></div></div>
   </main>
   <section id="settings-panel" class="panel settings-panel" aria-labelledby="settings-title" hidden>
     <div class="panel-heading"><h2 id="settings-title">Make yourself at home.</h2><button id="close-settings" class="icon-button" aria-label="Close settings">×</button></div>
-    <dl id="controls-vr" class="control-list"><dt>Walk / turn</dt><dd>Left / right stick</dd><dt>Mine / place</dt><dd>Right trigger / grip</dd><dt>Teleport</dt><dd>Hold left trigger, aim, release</dd><dt>Choose block</dt><dd>X / left grip</dd><dt>Toggle flight</dt><dd>Y</dd><dt>Jump / fly up / down</dt><dd>A / A / B</dd></dl>
-    <details id="desktop-test-controls" hidden><summary>Desktop test controls</summary><dl class="control-list"><dt>Move / look</dt><dd>WASD / mouse</dd><dt>Mine / place</dt><dd>Left / right click</dd><dt>Material</dt><dd>1–9 / scroll</dd><dt>Flight / rise / descend</dt><dd>F / Space / Shift</dd><dt>Home / menu / diagnostics</dt><dd>R / Esc / F3</dd></dl></details>
+    <dl id="controls-vr" class="control-list"><dt>Walk / turn</dt><dd>Left / right stick</dd><dt>Gather / place</dt><dd>Hold right trigger / right grip</dd><dt>Teleport</dt><dd>Hold left trigger, aim, release</dd><dt>Choose material</dt><dd>X / left grip</dd><dt>Jump</dt><dd>A</dd></dl>
+    <details id="desktop-test-controls" hidden><summary>Desktop test controls</summary><dl class="control-list"><dt>Move / look</dt><dd>WASD / mouse</dd><dt>Mine / place</dt><dd>Left / right click</dd><dt>Material</dt><dd>1–9 / scroll</dd><dt>Creative-only flight</dt><dd>F / Space / Shift</dd><dt>Home / menu / diagnostics</dt><dd>R / Esc / F3</dd></dl></details>
     <div class="preferences"><label>VR turning<select id="turning"><option value="smooth">Smooth</option><option value="snap">Snap · 30°</option></select></label><label>Detail<select id="quality"><option value="balanced">Balanced</option><option value="high">High</option></select></label><label class="sound-setting">Sound<input type="checkbox" id="sound" checked /></label></div>
     <div class="save-actions"><button id="export-button" class="secondary">Export world</button><button id="import-button" class="secondary">Import world</button><button id="home-button" class="secondary">Return home</button><input id="import-file" type="file" accept=".json,application/json" hidden /></div>
     <p class="small save-note">Your world saves in this browser. Export a copy to keep a backup or move it to another headset.</p>
   </section>
   <div id="crosshair" aria-hidden="true" hidden><i></i><b></b></div>
   <div id="target-name" hidden></div>
-  <div id="hotbar-wrap" hidden><div id="selected-label">Meadow</div><nav id="hotbar" aria-label="Building materials"></nav><div class="hotbar-hint">MINE <span>LMB</span> <i>·</i> BUILD <span>RMB</span> <i>·</i> FLY <span>F</span></div></div>
+  <div id="hotbar-wrap" hidden><div id="selected-label">Meadow</div><nav id="hotbar" aria-label="Building materials"></nav><div class="hotbar-hint">MINE <span>LMB</span> <i>·</i> BUILD <span>RMB</span> <i>·</i> MENU <span>ESC</span></div></div>
   <div id="toast" role="status" aria-live="polite" hidden></div>
   <output id="debug" hidden></output>
   <div id="fatal" role="alert" hidden><h2>The world couldn’t start.</h2><p id="fatal-message"></p><button onclick="location.reload()" class="primary">Try again</button></div>
