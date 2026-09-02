@@ -89,6 +89,28 @@ try{
   const exported=JSON.parse(await readFile(resolve(out,'world-export.json'),'utf8'));
   assert.deepEqual(exported.edits,stored.edits);assert.equal(exported.seed,stored.seed);
   notes.push('Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.');
+
+  // Load a deterministic mid-Hollow Journey state so the new progression props are
+  // rendered and inspected by CI without requiring browser automation to replay the whole chapter.
+  await page.evaluate(save=>{
+    save.edits=[];save.selected=7;
+    save.player={x:47.625,y:42,z:-55.125,yaw:0,pitch:-0.16,flying:false};
+    save.journey={
+      inventory:{1:0,2:0,3:0,4:0,5:0,6:0,7:2,8:0,9:0},
+      tool:'quarry',archAwake:true,lumenReached:true,resonators:[true,false,true],deepstoneReached:false,
+    };
+    localStorage.setItem('mineworld.skyreach.save.v1',JSON.stringify(save));
+  },structuredClone(stored));
+  await page.goto(url+'?test=1');await ready(page);
+  await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
+  await page.waitForFunction(()=>!!document.pointerLockElement);
+  await page.keyboard.press('F3');
+  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Wake Hollow resonators'));
+  await pause(1300);
+  assert.match(await page.locator('#location').textContent(),/Lumen Hollow/);
+  assert.match(await page.locator('#debug').textContent(),/2\/3/);
+  await page.screenshot({path:resolve(out,'lumen-hollow.jpg'),type:'jpeg',quality:90});
+  notes.push('Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.');
   notes.push(`Desktop diagnostics: ${await page.locator('#debug').textContent()}`);
 
   assert.deepEqual(errors,[],'No browser runtime or shader errors');
