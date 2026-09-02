@@ -1,22 +1,23 @@
 # Mineworld
 
-A Three.js VR voxel sandbox for Meta Quest. The first chapter, **Skyreach**, is a quiet archipelago of floating islands, cedar groves, springs, caves, and lumen crystals. Mine the landscape, build a home, and fly to the next island.
+A Three.js VR voxel game for Meta Quest. The first chapter, **Skyreach**, is a quiet archipelago of floating islands, cedar groves, springs, caves, ruins, and lumen crystals. Mine the landscape for real resources, build from what you gather, awaken the Old Arch, and follow it toward the next island.
 
 **[Play Mineworld](https://permabulk69420-pixel.github.io/Mineworld/)** · [Build and deployment](https://github.com/permabulk69420-pixel/Mineworld/actions)
 
 ![The Skyreach Isles in Mineworld](docs/skyreach.jpg)
 
-## First build: v0.1
+## Current game
 
 - Seven deterministic, fully editable islands with original procedural textures.
-- Mining and unlimited creative building with nine materials.
-- Walking, collision, single-block stepping, jumping, and flight.
-- Quest WebXR: tracked controllers, head-relative locomotion, smooth or snap turning, teleport arc, and a wrist palette.
+- **Journey mode is the normal game:** mined blocks enter a finite inventory and placing blocks consumes them.
+- The first progression chain asks you to gather six lumen crystals, carry them to the Old Arch, then reach Lumen Hollow.
+- Walking, collision, single-block stepping, jumping, teleporting, and head-relative VR locomotion.
+- Quest WebXR: tracked controllers, smooth or snap turning, teleport arc, and a wrist inventory/objective display.
 - Automatic saves in the current browser, plus JSON export/import for backups and device transfers.
 - Chunk meshes with hidden-face removal and vertex ambient occlusion; instanced foliage and debris.
 - GitHub Actions tests, builds, captures screenshots, and deploys to GitHub Pages.
 
-This first foundation focuses on creative exploration and building. Survival, crafting, enemies, multiplayer, infinite terrain, and flowing-water simulation are future possibilities. Quest performance and controller feel still need an actual headset playtest.
+Creative mode remains available as an explicit development/building mode with `?creative=1`; it is no longer the product default. Survival pressure, crafting, creatures, additional realms, and deeper progression can grow from the Journey loop instead of replacing it later.
 
 ## Controls
 
@@ -24,14 +25,14 @@ This first foundation focuses on creative exploration and building. Survival, cr
 | --- | --- |
 | Move | Left stick |
 | Look / turn | Head / right stick |
-| Mine | Hold right trigger |
-| Place | Hold right grip |
+| Gather / mine | Hold right trigger |
+| Place selected material | Hold right grip |
 | Material | X next / left grip previous |
 | Jump | A |
-| Toggle flight | Y |
-| Fly up / down | A / B |
 | Teleport | Hold left trigger, aim at ground, release |
 | Return home / settings | Leave VR using the headset control, then open Controls & settings |
+
+The wrist shows the selected material, how many you have, and the current Journey objective. Flight is disabled in Journey mode. In explicit creative mode, Y toggles flight and A/B move vertically.
 
 On Quest, open the play link **in the headset browser** and choose **Enter VR**. Grant the requested immersive-session permission and use controllers. Hand tracking is not implemented. Smooth turning is the default; snap turning is available in Controls & settings before entering VR.
 
@@ -39,7 +40,7 @@ On Quest, open the play link **in the headset browser** and choose **Enter VR**.
 
 Saves belong to a browser and device. They do not sync to GitHub. Use **Controls & settings → Export world** to keep a backup or carry a build to another headset. Importing asks before replacing the current device's world. Unsupported or corrupt saves are preserved rather than overwritten.
 
-The seed and terrain generator version are stored with coordinate-based block edits. Generator version 1 is a compatibility contract: future updates must keep it available for existing worlds.
+The seed and terrain generator version are stored with coordinate-based block edits. Journey inventory and progression are stored alongside them. Generator version 1 is a compatibility contract: future updates must keep it available for existing worlds.
 
 ## Development
 
@@ -53,7 +54,7 @@ npm run check
 
 The game has no runtime API, CDN, account, or key dependency. The Three.js bundle and all assets ship with the game. One block is 0.75 metres. The finite build region is approximately 190 × 190 metres, with a vertical limit of 96 metres.
 
-For checks without a headset, append `?test=1` to the game URL. This exposes **Start desktop test** and its control reference: WASD/mouse, left/right click to mine/place, 1–9 to choose blocks, F to fly, Space/Shift to rise/descend, R to return home, Esc for the menu, and F3 for diagnostics. This is a development aid. The public game is VR only, and has no phone gameplay controls.
+For checks without a headset, append `?test=1` to the game URL. This exposes **Start desktop test** and its control reference. It remains a development aid; the public product is VR only, with no phone gameplay controls. Append `?creative=1` only when deliberately testing unrestricted building/flight.
 
 For browser regression checks (the same checks run in Actions):
 
@@ -69,7 +70,7 @@ Push builds also keep the latest screenshot set and report on the `previews` bra
 
 ## Deployment
 
-This repository deploys through **GitHub Actions → GitHub Pages**. Code pushes to `main` run world/physics/save tests, build, run the browser check, and deploy. Documentation-only pushes skip deployment. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
+This repository deploys through **GitHub Actions → GitHub Pages**. Code pushes to `main` run world/physics/save/game tests, build, run the browser check, and deploy. Documentation-only pushes skip deployment. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
 
 For a new fork, select **Settings → Pages → GitHub Actions** as the source once. Browser sign-in is not required for routine code updates through the GitHub connection.
 
