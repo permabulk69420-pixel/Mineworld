@@ -21,17 +21,12 @@ export class XRControls {
       player.rig.add(controller,grip);
       controller.addEventListener('connected',event=>{controller.userData.source=event.data;grip.userData.hand=event.data.handedness;});
       controller.addEventListener('disconnected',()=>{controller.userData.source=null;grip.userData.hand=null;this.previous.clear();});
-      const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:0xc4fff0,transparent:true,opacity:0.5}));
+      const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:0xc4fff0,transparent:true,opacity:0.38}));
       beam.scale.z=6;controller.add(beam);
-      const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.019,0.026,0.18,8),new THREE.MeshLambertMaterial({color:0x34494d}));
-      handle.rotation.x=-0.32;handle.position.set(0,-0.005,0.005);grip.add(handle);
-      const head=new THREE.Mesh(new THREE.BoxGeometry(0.055,0.025,0.07),new THREE.MeshLambertMaterial({color:0x88e6c7}));
-      head.position.set(0,0.085,-0.025);grip.add(head);
-      const pick=new THREE.Mesh(new THREE.ConeGeometry(0.022,0.18,5),new THREE.MeshLambertMaterial({color:0xb9c8c3}));
-      pick.rotation.z=Math.PI/2;pick.position.set(0.085,0.09,-0.028);pick.visible=false;grip.add(pick);
-      const resonance=new THREE.Mesh(new THREE.TorusGeometry(0.042,0.006,6,18),new THREE.MeshBasicMaterial({color:0x9dffe9,transparent:true,opacity:.82,depthWrite:false,blending:THREE.AdditiveBlending}));
-      resonance.position.set(0,0.087,-0.026);resonance.rotation.x=Math.PI/2;resonance.visible=false;grip.add(resonance);
-      this.controllers.push({controller,grip,beam,head,pick,resonance});
+      // Intentionally no decorative hand tool here. The old prototype attached a tiny
+      // sideways fake pick to both hands while mining still happened through a button.
+      // A visible tool returns only when it is a real one-handed physical interaction.
+      this.controllers.push({controller,grip,beam});
     }
     this.wristCanvas=document.createElement('canvas');this.wristCanvas.width=512;this.wristCanvas.height=256;
     this.wristTexture=new THREE.CanvasTexture(this.wristCanvas);this.wristTexture.colorSpace=THREE.SRGBColorSpace;
@@ -41,16 +36,14 @@ export class XRControls {
     this.arc=new THREE.Line(this.arcGeometry,new THREE.LineBasicMaterial({color:0x8df4d2}));this.arc.frustumCulled=false;this.arc.visible=false;scene.add(this.arc);
     this.marker=new THREE.Mesh(new THREE.RingGeometry(0.22,0.29,32),new THREE.MeshBasicMaterial({color:0xb8ffe4,side:THREE.DoubleSide}));
     this.marker.rotation.x=-Math.PI/2;this.marker.visible=false;scene.add(this.marker);
-    this.wristKey='';this.toolKey='';
+    this.wristKey='';
   }
 
   reset(){this.previous.clear();this.teleportHeld=false;this.destination=null;this.arc.visible=this.marker.visible=false;this.snapReady=true;}
-
   byHand(hand){return this.controllers.find(c=>c.controller.userData.source?.handedness===hand);}
 
   ray(hand='right'){
-    const info=this.byHand(hand);
-    if(!info)return null;
+    const info=this.byHand(hand);if(!info)return null;
     info.controller.updateWorldMatrix(true,false);
     this.origin.setFromMatrixPosition(info.controller.matrixWorld);
     this.rotation.extractRotation(info.controller.matrixWorld);
@@ -68,20 +61,17 @@ export class XRControls {
     let leftTrigger=false;
     for(const {controller,grip,beam} of this.controllers){
       const source=controller.userData.source;if(!source?.gamepad){beam.visible=false;continue;}
-      const hand=source.handedness,gp=source.gamepad,axes=stickAxes(gp);
-      const down=i=>!!gp.buttons[i]?.pressed;
+      const hand=source.handedness,gp=source.gamepad,axes=stickAxes(gp),down=i=>!!gp.buttons[i]?.pressed;
       beam.visible=hand==='right';
       if(hand==='left'){
         if(this.wrist.parent!==grip)grip.add(this.wrist);
-        result.forward=-axes.y;result.strafe=axes.x;
-        leftTrigger=down(0);
+        result.forward=-axes.y;result.strafe=axes.x;leftTrigger=down(0);
         if(this.edge(hand,1,down(1)))this.callbacks.cycle(-1);
         if(this.edge(hand,4,down(4)))this.callbacks.cycle(1);
         if(this.edge(hand,5,down(5)))this.callbacks.flight();
       }else if(hand==='right'){
         result.mine=down(0);result.build=down(1);
-        result.vertical=(down(4)?1:0)-(down(5)?1:0);
-        result.jump=this.edge(hand,4,down(4));
+        result.vertical=(down(4)?1:0)-(down(5)?1:0);result.jump=this.edge(hand,4,down(4));
         if(turning==='smooth')this.player.turn(-axes.x*1.8*dt);
         else if(Math.abs(axes.x)>0.65&&this.snapReady){this.player.turn(-Math.sign(axes.x)*Math.PI/6);this.snapReady=false;}
         if(Math.abs(axes.x)<0.25)this.snapReady=true;
@@ -103,8 +93,7 @@ export class XRControls {
     const attribute=this.arcGeometry.attributes.position;
     let previous=start.clone(),count=0;this.destination=null;
     for(let i=0;i<64;i++){
-      const t=i*0.038;
-      const point=start.clone().addScaledVector(velocity,t);point.y-=4.9*t*t;
+      const t=i*0.038,point=start.clone().addScaledVector(velocity,t);point.y-=4.9*t*t;
       const segment=point.clone().sub(previous),length=segment.length();
       const hit=length>0?voxelRaycast(this.world,previous,segment,length):null;
       if(hit){
@@ -121,34 +110,19 @@ export class XRControls {
     if(this.destination)this.marker.position.set(this.destination.x,this.destination.y+0.025,this.destination.z);
   }
 
-  updateTool(tool,creative=false){
-    const key=`${tool}:${creative}`;if(this.toolKey===key)return;this.toolKey=key;
-    const resonant=!creative&&tool==='resonant';
-    const quarry=creative||tool==='quarry'||resonant;
-    for(const info of this.controllers){
-      info.pick.visible=quarry;
-      info.resonance.visible=resonant;
-      info.pick.material.color.set(resonant?0xd8fff6:0xb9c8c3);
-      info.head.material.color.set(resonant?0x79e9d1:quarry?0xb8c6bf:0x88e6c7);
-      info.head.scale.set(quarry?1.35:1,quarry?1.15:1,quarry?0.8:1);
-      info.resonance.scale.setScalar(resonant?1.12:1);
-    }
-  }
+  updateTool(){ /* Visible tools are intentionally disabled until the physical interaction is real. */ }
 
   updateWrist(selected,flying,game=null){
     const inventory=game?.inventory||{};
     const available=game?.creative?[...PALETTE]:PALETTE.filter(id=>(inventory[id]||0)>0);
     const selectedId=PALETTE[selected],selectedCount=game?.creative?'∞':inventory[selectedId]||0;
-    const deepstone=game?.creative?0:inventory[BLOCK.BASALT]||0;
-    const objective=game?.creative?'Creative build mode':game?.objective||'Explore Skyreach';
-    const tool=game?.creative?'BUILDER TOOL':game?.tool==='resonant'?'RESONANT PICK':game?.tool==='quarry'?'QUARRY PICK':'FIELD TOOL';
-    const key=`${selected}:${flying}:${PALETTE.map(id=>inventory[id]||0).join(',')}:${deepstone}:${objective}:${tool}:${game?.creative}`;if(this.wristKey===key)return;this.wristKey=key;
+    const objective=game?.creative?'Creative build mode':game?.objective||'Explore First Light';
+    const key=`${selected}:${flying}:${PALETTE.map(id=>inventory[id]||0).join(',')}:${objective}:${game?.creative}`;if(this.wristKey===key)return;this.wristKey=key;
     const ctx=this.wristCanvas.getContext('2d');ctx.clearRect(0,0,512,256);
     ctx.fillStyle='rgba(12,30,35,.92)';ctx.beginPath();ctx.roundRect(0,0,512,256,22);ctx.fill();
     ctx.fillStyle='#a0e4c1';ctx.font='600 22px system-ui';ctx.fillText('MINEWORLD',24,40);
-    ctx.textAlign='right';ctx.fillStyle='#cfddd5';ctx.fillText(game?.creative?(flying?'CREATIVE · FLY':'CREATIVE'):tool,488,40);ctx.textAlign='left';
-    ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';
-    ctx.fillText(available.length?(selectedCount?`${BLOCKS[selectedId].name}  ×${selectedCount}`:'PACK'):'PACK EMPTY',24,84);
+    ctx.textAlign='right';ctx.fillStyle='#cfddd5';ctx.fillText(game?.creative?(flying?'CREATIVE · FLY':'CREATIVE'):'HANDS',488,40);ctx.textAlign='left';
+    ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(available.length?(selectedCount?`${BLOCKS[selectedId].name}  ×${selectedCount}`:'PACK'):'PACK EMPTY',24,84);
     if(available.length){
       const gap=Math.min(58,430/Math.max(1,available.length));
       available.forEach((id,i)=>{const x=26+i*gap;ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(x,102,38,38);if(id===selectedId){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(x-4,98,46,46);}});
@@ -157,8 +131,7 @@ export class XRControls {
     }
     ctx.font='600 18px system-ui';ctx.fillStyle='#d9e6df';ctx.fillText(objective.slice(0,52),24,177);
     ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';
-    const hint=game?.creative?'X: material · Y: flight · trigger mine · grip build':game?.tool==='resonant'?`Deepstone ×${deepstone} · trigger: gather · Y: use`:'Trigger: gather · grip: place · X: carried material · Y: craft/use';
-    ctx.fillText(hint,24,211);
+    ctx.fillText(game?.creative?'X: material · Y: flight · trigger mine · grip build':'Trigger: gather · grip: place · X: carried material',24,211);
     ctx.font='17px system-ui';ctx.fillStyle='#819999';ctx.fillText('Left trigger: teleport · right stick: turn',24,238);
     this.wristTexture.needsUpdate=true;
   }
