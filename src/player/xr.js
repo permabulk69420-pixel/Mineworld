@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PALETTE, BLOCKS } from '../world/blocks.js';
+import { PALETTE, BLOCKS, BLOCK } from '../world/blocks.js';
 import { voxelRaycast } from '../world/world.js';
 import { collides } from './physics.js';
 
@@ -137,9 +137,10 @@ export class XRControls {
 
   updateWrist(selected,flying,game=null){
     const count=game?.creative?'∞':game?.inventory?.[PALETTE[selected]]??0;
+    const deepstone=game?.creative?0:game?.inventory?.[BLOCK.BASALT]??0;
     const objective=game?.creative?'Creative build mode':game?.objective||'Explore Skyreach';
     const tool=game?.creative?'BUILDER TOOL':game?.tool==='resonant'?'RESONANT PICK':game?.tool==='quarry'?'QUARRY PICK':'FIELD TOOL';
-    const key=`${selected}:${flying}:${count}:${objective}:${tool}`;if(this.wristKey===key)return;this.wristKey=key;
+    const key=`${selected}:${flying}:${count}:${deepstone}:${objective}:${tool}`;if(this.wristKey===key)return;this.wristKey=key;
     const ctx=this.wristCanvas.getContext('2d');ctx.clearRect(0,0,512,256);
     ctx.fillStyle='rgba(12,30,35,.92)';ctx.beginPath();ctx.roundRect(0,0,512,256,22);ctx.fill();
     ctx.fillStyle='#a0e4c1';ctx.font='600 22px system-ui';ctx.fillText('MINEWORLD',24,40);
@@ -147,7 +148,9 @@ export class XRControls {
     ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(`${BLOCKS[PALETTE[selected]].name}  ×${count}`,24,84);
     PALETTE.forEach((id,i)=>{ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(26+i*53,102,38,38);if(i===selected){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(22+i*53,98,46,46);}});
     ctx.font='600 18px system-ui';ctx.fillStyle='#d9e6df';ctx.fillText(objective.slice(0,52),24,177);
-    ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';ctx.fillText(game?.creative?'X: material · Y: flight · trigger mine · grip build':'Trigger: gather · grip: place · X: material · Y: craft/use',24,211);
+    ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';
+    const hint=game?.creative?'X: material · Y: flight · trigger mine · grip build':game?.tool==='resonant'?`Deepstone ×${deepstone} · trigger: gather · Y: use`:'Trigger: gather · grip: place · X: material · Y: craft/use';
+    ctx.fillText(hint,24,211);
     ctx.font='17px system-ui';ctx.fillStyle='#819999';ctx.fillText('Left trigger: teleport · right stick: turn',24,238);
     this.wristTexture.needsUpdate=true;
   }
