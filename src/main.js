@@ -262,7 +262,7 @@ async function boot(){
     }else{highlight.visible=ghost.visible=false;resetMining();}
     const recipeReady=!creative&&quarryRecipeReady(journey);
     benchGlow.material.color.set(recipeReady?0xffe38f:journey.tool==='quarry'?0x5c8f87:0x6ccfbc);
-    benchGlow.material.opacity=recipeReady?.88:journey.tool==='quarry'?.18:.32;
+    benchGlow.material.opacity=recipeReady ? .88 : journey.tool==='quarry' ? .18 : .32;
     benchGlow.rotation.y=elapsed*.9;benchGlow.position.y=S*(1.08+(recipeReady?Math.sin(elapsed*3)*.05:0));
     portal.visible=portalRing.visible=!creative&&journey.archAwake;
     hollowWaystone.visible=!creative&&journey.lumenReached;
