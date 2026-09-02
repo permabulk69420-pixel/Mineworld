@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BLOCK, BLOCK_SIZE } from '../src/world/blocks.js';
-import { createJourney, collectBlock, canPlace, spendBlock, harvestInfo, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, TOOL } from '../src/game.js';
+import { createJourney, collectBlock, canPlace, spendBlock, harvestInfo, quarryRecipeReady, craftQuarryPick, updateJourney, archPortalActive, hollowPortalActive, journeyObjective, TOOL } from '../src/game.js';
 
 test('Journey mode gathers finite materials and spends them when building', () => {
   const journey = createJourney();
@@ -14,16 +14,20 @@ test('Journey mode gathers finite materials and spends them when building', () =
   assert.equal(spendBlock(journey, BLOCK.STONE), false);
 });
 
-test('the first quarry pick is earned from cedar and limestone at the home lookout', () => {
+test('the first quarry pick requires a deliberate craft at the First Light field bench', () => {
   const journey = createJourney();
   assert.equal(journey.tool, TOOL.HAND);
   assert.equal(harvestInfo(journey, BLOCK.CRYSTAL).allowed, false);
   for (let i = 0; i < 4; i++) collectBlock(journey, BLOCK.WOOD);
   for (let i = 0; i < 6; i++) collectBlock(journey, BLOCK.STONE);
-  assert.match(journeyObjective(journey), /First Light lookout/);
-  assert.deepEqual(updateJourney(journey, { x:60, z:60 }), []);
-  const events = updateJourney(journey, { x:1.5 * BLOCK_SIZE, z:25.5 * BLOCK_SIZE });
-  assert.deepEqual(events, ['tool-crafted']);
+  assert.equal(quarryRecipeReady(journey), true);
+  assert.match(journeyObjective(journey), /press Y/);
+  assert.deepEqual(updateJourney(journey, { x:1.5 * BLOCK_SIZE, z:25.5 * BLOCK_SIZE }), [], 'proximity alone must not craft');
+  const away = craftQuarryPick(journey, { x:60, z:60 });
+  assert.equal(away.ok, false);
+  assert.match(away.message, /field bench/);
+  const result = craftQuarryPick(journey, { x:1.5 * BLOCK_SIZE, z:25.5 * BLOCK_SIZE });
+  assert.deepEqual(result, { ok:true, event:'tool-crafted' });
   assert.equal(journey.tool, TOOL.QUARRY);
   assert.equal(journey.inventory[BLOCK.WOOD], 0);
   assert.equal(journey.inventory[BLOCK.STONE], 0);
