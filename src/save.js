@@ -1,7 +1,8 @@
 import { BLOCKS, DEFAULT_SEED, GENERATOR_VERSION, PALETTE, withinWorld, WORLD_LIMIT, HEIGHT_LIMIT, BLOCK_SIZE } from './world/blocks.js';
 import { createJourney, snapshotJourney } from './game.js';
 
-export const SAVE_KEY = 'mineworld.skyreach.save.v2';
+export const SAVE_KEY = 'mineworld.skyreach.save.v3';
+export const PREVIOUS_SAVE_KEY = 'mineworld.skyreach.save.v2';
 export const LEGACY_SAVE_KEY = 'mineworld.skyreach.save.v1';
 export const SETTINGS_KEY = 'mineworld.settings.v1';
 const MAX_EDITS = 50000;
@@ -36,9 +37,10 @@ export function readSave(storage) {
   try { raw = storage.getItem(SAVE_KEY); }
   catch { return { data:null, writable:false, message:'Browser storage is unavailable. Export a save before leaving.' }; }
   if (!raw) {
-    let legacy=false;
-    try { legacy=Boolean(storage.getItem(LEGACY_SAVE_KEY)); } catch {}
-    return { data:null, writable:true, message:legacy?'New large world · previous prototype save preserved':'New world' };
+    let previous=false,legacy=false;
+    try { previous=Boolean(storage.getItem(PREVIOUS_SAVE_KEY));legacy=Boolean(storage.getItem(LEGACY_SAVE_KEY)); } catch {}
+    const preserved=previous?'Previous First Light world preserved':legacy?'Previous prototype save preserved':null;
+    return { data:null, writable:true, message:preserved?`New visual-reset world · ${preserved}`:'New world' };
   }
   try { return { data:validateSave(JSON.parse(raw)), writable:true, message:'World restored' }; }
   catch { return { data:null, writable:false, raw, message:'An unreadable save is protected. Export it before replacing it.' }; }
