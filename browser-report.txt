@@ -1,4 +1,4 @@
-Journey default: field-tool objective is active and creative flight is disabled.
+Journey default: empty pack, no exposed creative palette, player-built bench objective, and creative flight disabled.
 Creative developer mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.
 Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.
 Deepstone forge passage: runtime traversal reached Old Quarry, persisted discovery, and rendered the return waystone.
