@@ -35,7 +35,6 @@ try{
   assert.equal(await page.locator('#play-button').isVisible(),false,'The public entry is VR only');
   assert.equal(await page.locator('#touch-controls').count(),0);
 
-  // Foundation Journey: no prefab progression, no exposed creative palette.
   await page.setViewportSize({width:1280,height:800});
   await page.goto(url+'?test=1');await ready(page);
   await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
@@ -49,7 +48,6 @@ try{
   await page.screenshot({path:resolve(out,'foundation-start.jpg'),type:'jpeg',quality:90});
   notes.push('Foundation Journey: large-world start rendered with empty pack and no bench/portal/tool progression exposed.');
 
-  // Creative remains the unrestricted regression harness for shared voxel systems.
   await page.goto(url+'?test=1&creative=1');await ready(page);
   await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
   await page.waitForFunction(()=>!!document.pointerLockElement);
@@ -62,6 +60,8 @@ try{
   await page.screenshot({path:resolve(out,'large-world-flight.jpg'),type:'jpeg',quality:90});
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('mineworld.skyreach.save.v2')));
   assert.equal(stored.generatorVersion,2);assert.equal(stored.selected,7);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>!document.querySelector('#welcome').hidden);
   await page.getByRole('button',{name:'Controls & settings'}).click();
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Export world'}).click();
   const download=await downloadPromise;await download.saveAs(resolve(out,'world-export.json'));
