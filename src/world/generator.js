@@ -34,7 +34,7 @@ function topHeight(x,z,shape,seed) {
 }
 
 export function generateWorld(world, version=GENERATOR_VERSION) {
-  if(version!==2) throw new Error('This build expects the large-world generator.');
+  if(version!==3) throw new Error('This build expects the First Light visual-reset generator.');
   const {seed}=world;world.surfaces=[];world.landmarks=[];
 
   for(let x=-104;x<=106;x++) for(let z=-91;z<=91;z++){
