@@ -135,6 +135,7 @@ async function boot(){
     const dt=Math.min(Math.max((time-last)/1000,0),.05);last=time;elapsed+=dt;frames++;statsTime+=dt;saveTime+=dt;
     const active=started&&(!ui.menu||renderer.xr.isPresenting);
     if(active){
+      if(renderer.xr.isPresenting){player.rig.updateMatrixWorld(true);renderer.xr.updateCamera(player.camera);}
       const state=renderer.xr.isPresenting?xr.sample(dt,settings.turning):input.sample();
       const result=player.update(dt,state);if(result==='home'){ui.flight(false);ui.toast('The clouds carried you home.');markDirty();}
       player.rig.updateMatrixWorld(true);aim();actions(state);

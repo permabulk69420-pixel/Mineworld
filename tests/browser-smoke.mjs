@@ -42,7 +42,9 @@ try{
   await page.keyboard.press('8');assert.equal(await page.getByRole('button',{name:'Lumen crystal',exact:true}).getAttribute('aria-pressed'),'true');
   await page.keyboard.press('f');await page.keyboard.down('Space');await pause(450);await page.keyboard.up('Space');
   // Look down from flight so mining and rebuilding cannot place the player in the edited cell.
-  await page.mouse.move(720,480);await page.mouse.move(720,850,{steps:10});
+  // CDP's absolute mouse coordinates can report zero relative motion while locked.
+  // Supply a relative movement event through the same document input handler.
+  await page.dispatchEvent('body','mousemove',{movementX:0,movementY:460,bubbles:true});
   await page.waitForFunction(()=>document.querySelector('#target-name').textContent.length>0);
   const before=await editCount(page);
   await page.mouse.down({button:'left'});
@@ -90,5 +92,6 @@ try{
   notes.push(error.stack||String(error));throw error;
 }finally{
   await writeFile(resolve(out,'browser-report.txt'),[...notes,'Browser errors:',...errors].join('\n'));
+  console.log([...notes,'Browser errors:',...new Set(errors)].join('\n'));
   await browser.close();await new Promise(resolve=>server.close(resolve));
 }

@@ -64,6 +64,8 @@ npm run test:browser
 
 Screenshots and a text report are produced in `artifacts/`. Browser tests exercise the production build under `/Mineworld/` so relative asset paths are checked too. The software renderer's frame rate is **not** a Quest benchmark.
 
+Push builds also keep the latest screenshot set and report on the `previews` branch, including failure captures. This branch contains test output only and never deploys the game.
+
 ## Deployment
 
 In repository **Settings → Pages**, select **GitHub Actions** as the source once. Every push to `main` then runs world/physics/save tests, builds, runs the browser check, and deploys. Pull requests run validation without publishing. The workflow can also be run manually from Actions.
