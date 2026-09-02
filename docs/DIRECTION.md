@@ -1,119 +1,126 @@
-# Direction: a world worth returning to
+# Direction: build the world before the game systems
 
-Mineworld should become a beautiful, tactile, solitary VR exploration/building game. Voxel interaction is useful vocabulary, but the project only earns new systems when they feel convincing in a headset.
+Mineworld should become a beautiful, tactile VR exploration/adventure game in a mutable voxel world. The current problem is more fundamental than progression: **the playable space still reads as a small Minecraft-like island in the headset.** Until that changes, adding tools, traversal mechanics, creatures, crafting, combat, quests, or progression is premature.
 
-## What Mineworld is actually becoming
+## Current judgement
 
-A large landscape is necessary but it is not a game by itself. The v0.3 First Light continent is the **home region and first chapter space**, not the intended total world.
+The v0.3 generator solved the previous toy-island problem only numerically. The landmass is larger on paper, but headset judgement is what matters, and in Quest it still feels like a small island rather than a world.
 
-The world should be structured around a small number of **large, memorable playable regions** rather than many tiny progression islands. A major region should be large enough that walking across it has meaning, contains multiple distinct environments and vertical layers, and remains useful after its first objective is complete. Small sky-islets can exist as scenery, secrets, resources or traversal challenges, but they should not masquerade as complete levels.
+It also inherits too much of Minecraft's visual language: exposed cube terrain, blocky trees, familiar grass/soil/stone layering, similarly scaled terrain noise, and a world whose edge/coastline is easy to comprehend at a glance. Mineworld can remain voxel-based without looking like a Minecraft imitation.
 
-First Light is the place the player learns the game, establishes a home, opens the underground, and earns the first traversal capability. Later major landmasses should be visible or foreshadowed from high points and reached through physical travel. Do not return to the old pattern of walking into a glowing plane and instantly appearing on a tiny pad.
+The next milestone is therefore **WORLD**. Do not build a grapple, pickaxe, crafting station, creature, progression loop, new quest, or traversal upgrade until the world itself passes.
 
-## Proposed world structure
+## What the next world must achieve
 
-### Region 1 — First Light
+### 1. It must feel genuinely large in VR
 
-First Light remains one broad connected landmass with several subregions: southern meadow/home country, cedar vale, lake and stream, western cliffs, broad caves/deepstone, and the high northern ridge.
+The player should not spawn somewhere that lets them mentally measure the whole playable landmass in seconds.
 
-The important change is that these places acquire **different gameplay uses**. They are not merely names on the same terrain:
+A major destination should take minutes of actual walking to reach, not a short jog. Distant mountains, forests, cliffs and landmarks should sit at scales that create real depth in the headset. The normal view should suggest more world beyond what can immediately be understood.
 
-- meadow/home country: safest building space, storage, later utility stations;
-- cedar country: renewable/harvestable wood and eventually ecology;
-- lake country: distinct resources and a reason to care about water later;
-- caves: first meaningful depth progression, ores/minerals and danger/atmosphere;
-- west cliffs / north ridge: traversal tests and long-range landmarks;
-- high ridge: first strong reveal of the wider world and eventual route outward.
+First Light should be on the order of **hundreds of metres of meaningful traversal scale**, with room to grow toward roughly half-kilometre to kilometre-class regions if Quest performance and streaming support it. Do not achieve this by generating an enormous flat empty sheet.
 
-A player should be able to spend a meaningful opening session on First Light without feeling trapped there or being told to leave after five minutes.
+### 2. The world architecture must stop assuming the whole world is resident
 
-### Later regions
+The current generator eagerly creates the whole finite landmass. That architecture encourages tiny worlds because every expansion permanently increases resident chunks, meshes and draw cost.
 
-After First Light earns its first major traversal capability, reveal another **large** landmass rather than another micro-island. Each later region should introduce a different environment, resource ecology and physical problem while preserving reasons to return home.
+Before simply multiplying the existing island dimensions, move toward **deterministic chunk streaming around the player**:
 
-The ideal long-term topology is a handful of large landmasses plus smaller optional islets between them. If the current finite world bounds become too small, expand the chunk/world architecture or stream additional terrain rather than shrinking destinations to fit the old bounds.
+- generate/load nearby chunks;
+- unload distant detailed chunks safely;
+- preserve edits independently of whether a chunk is resident;
+- use cheaper distant terrain/landmark representation where useful;
+- keep generation deterministic from the world seed;
+- maintain safe Quest memory and draw-call budgets.
 
-Travel between major regions should have spatial meaning: a restored cable route, glider/sky-sail, lift, bridge, moving platform, vehicle, or another physical traversal system. Instant portals are not the default solution.
+This is infrastructure in service of visible world scale, not an excuse to disappear into engine work. The result must quickly produce a larger, better-looking playable landscape.
 
-## Progression spine
+### 3. It must stop looking like Minecraft
 
-Progression should be **capability-driven and spatial**, not `collect N glowing objects → teleport to next pad`.
+Voxel editability does not require every visible object to be a one-metre cube.
 
-A plausible first chapter spine is:
+Terrain may remain voxel-derived, but the presentation should develop its own visual language:
 
-1. **Exist in First Light.** Walk, explore, gather loose/simple materials and choose where home starts to form.
-2. **Earn one real mining tool.** This must be a convincing one-handed VR interaction, not a controller ornament. For its first test build the tool may simply be granted; acquisition can be designed only after the interaction itself is worth keeping.
-3. **The tool opens geology.** Stone and cave materials become physically obtainable, giving the caves a concrete reason to exist.
-4. **Bring underground value home.** A later polished utility station lets mined resources become something useful. Do not add this station until its object design and interaction pass the same quality bar as the tool.
-5. **Create the first traversal capability.** Underground/processed materials should enable something that changes movement or access: climbing/tethering, a cable system, gliding/sky-sailing, a powered lift, or another VR-appropriate mechanic.
-6. **Re-read First Light with the new capability.** Previously awkward cliffs, ridge routes, caves or gaps become accessible. The upgrade should change the old world before it merely unlocks a new one.
-7. **Reveal and physically reach the next major region.** From the ridge or another strong landmark, the player gets a real destination beyond First Light and a persistent route to it.
-8. **New region, new problem.** The next landmass should not simply contain stronger rock. It should add an ecological, environmental, traversal or survival problem that meaningfully changes play.
+- custom terrain materials and colour relationships rather than familiar Minecraft-like grass/dirt/stone bands;
+- stronger macro geology: long cliffs, shelves, ravines, valleys, ridges, arches, overhangs and exposed strata;
+- vegetation that is not a trunk made of blocks with a cube/blob leaf crown;
+- non-cubic procedural meshes for trees, shrubs, grasses, rocks, roots and other surface detail where appropriate;
+- a continuous-looking water treatment rather than water reading as another pile of cubes;
+- atmospheric depth, sky, clouds/haze and distant silhouettes that make scale legible;
+- landmarks whose silhouettes remain readable from hundreds of metres away.
 
-This gives the game a repeating macro-loop:
+Do not chase photorealism. A stylised world is fine. It simply needs to look intentionally like **Mineworld**, not like an approximation of Minecraft assets made with Three.js primitives.
 
-> **explore a real place → gain a physical capability → use it to reinterpret that place → reach a new large place → bring new value home**
+### 4. First Light must be a region, not an island-shaped level pad
 
-## Building and home
+The immediate target is one convincing starting region containing materially different spaces: broad open country, dense forest, substantial elevation, water, cliffs/ravines, caves and at least a few strong natural landmarks.
 
-Building remains central, but it should become useful without checklist quests such as `build 20 blocks`.
+The player does not need quests yet, but walking should continuously reveal new compositions and destinations. A ridge should actually tower over a valley. A forest should have an interior. A cave entrance should imply real depth. Water should occupy geographic space rather than decorate one small depression.
 
-Useful reasons to build can emerge from storage, processing, shelter from environmental conditions, creature/ecology interactions, farming/gardening, equipment racks, transport infrastructure, or simply creating a convenient base around the systems the player chooses to use.
+The outer world can eventually contain multiple large regions/landmasses, but do not fake scale by surrounding First Light with a collection of tiny pads.
 
-Home should accumulate utility over time. Progress should not make First Light disposable.
+## World acceptance test
+
+Do not move on to gameplay-system development until a Quest test can answer yes to most of these:
+
+- Does this feel like a place I could get lost in rather than an arena I can immediately understand?
+- Can I look toward at least several destinations that feel genuinely far away?
+- Do elevation and landmarks feel large at human scale?
+- Does moving for several minutes continue to reveal meaningfully different terrain?
+- Does the landscape have a visual identity that would not immediately be described as Minecraft?
+- Are forests, water, cliffs and caves convincing environments rather than small props/features on one island?
+- Does Quest performance remain comfortable while delivering that scale?
+
+If the answer is no, continue working on the world. **Do not compensate by adding gameplay systems.**
+
+## Gameplay direction — deliberately unresolved for now
+
+A large world is not itself a game, but deciding the exact progression loop before the world exists has repeatedly pushed development toward bad implementations: tiny portal islands, crude crafting props, fake tool tiers, and then premature traversal ideas.
+
+Mineworld will eventually need exploration, creatures, danger, equipment, useful building, progression and reasons to travel. None of those are committed to a specific implementation yet.
+
+In particular:
+
+- no Minecraft-style material/tool ladder is assumed;
+- no grapple or traversal mechanic is currently scheduled;
+- no workbench/crafting tree is currently scheduled;
+- no portal-to-the-next-island progression is returning;
+- no single gimmick has to define the whole game.
+
+Once the world itself is compelling, choose the next gameplay addition based on what that world naturally makes fun and useful.
 
 ## Interface and locomotion principles
 
-VR interaction should not assume every locomotion scheme is active simultaneously.
+The current comfort fixes remain valid regardless of future game design:
 
-- **Stick movement is the Journey default.**
-- Teleport is an optional locomotion mode selected in settings. In teleport mode left-stick translation is disabled; in stick mode teleport input/arc is disabled.
-- Turning remains a separate smooth/snap preference.
-- The wrist display is information on demand, not permanent scenery. It is hidden by default and Y toggles it during Journey; settings can choose the default visibility.
-- Progression should rely on world readability and physical cues before permanent objective text.
-
-## Current foundation
-
-The v0.2 progression prototype failed the quality bar. It moved too quickly from system to system: small islands, a crude workbench, primitive glowing portals, tiny resonators, and a decorative pick attached to both hands even though mining was still button-driven. Those systems made the project broader without making it better.
-
-The playable build has therefore been cut back to a **v0.3 foundation**. The old v1 prototype save remains preserved, while a generator-v2 save starts on a much larger connected First Light landmass. The current build is about establishing a credible place and interaction foundation before the progression spine above is implemented.
+- Stick movement is the Journey default.
+- Teleport is optional in settings and is mutually exclusive with stick translation.
+- Turning is separately selectable as smooth or snap.
+- The wrist display is information on demand, hidden by default and toggleable during Journey.
+- The player should not be forced to stare at objective/UI text in their peripheral vision.
 
 ## Development method
 
-**One important thing at a time.** A feature does not ship merely because it works technically.
+**One important problem at a time.** Right now the important problem is the world.
 
-The immediate sequence is:
+Immediate sequence:
 
-1. **Foundation defects and comfort.** Fix terrain/water bugs, locomotion exclusivity, wrist presence, controller mapping and other obvious headset problems.
-2. **One physical VR mining tool.** Model, orientation, reach, swing/hit logic, feedback, sound and gameplay effect belong to the same interaction. No bench or second tool in the same pass.
-3. **Give the caves a reason to exist.** Once mining itself is good, design the first underground resource/depth loop around that tool.
-4. **One polished home utility object.** Only then introduce a station/storage/processing object whose physical design is worth keeping.
-5. **One traversal capability.** Make it change how First Light can be explored before using it to reach another major region.
-6. **Second large region.** Expand the world only after First Light has an actual game loop and a reason to return.
-
-Do not build three mediocre progression beats when one polished interaction would teach us more.
-
-## Quality bar
-
-Before a new Journey feature is retained, ask:
-
-- Does it look intentional at headset scale from close range?
-- Does the player understand what it is without explanatory text compensating for weak form?
-- If it appears in the player's hand, does the hand/controller pose make physical sense?
-- Does the visible object actually participate in the interaction rather than decorating a button press?
-- Does it give the player a new reason to move, build, return, or experiment?
-- Does it make the world feel richer rather than smaller or more gamey?
-- Would we be comfortable leaving it unchanged for several builds while developing around it?
-
-If the answer is no, remove it rather than layering another feature over it.
+1. Keep the water/locomotion/wrist cleanup stable.
+2. Establish scalable chunk/world streaming sufficient for a genuinely larger region.
+3. Rebuild First Light's macro terrain at much larger perceived scale.
+4. Replace the most Minecraft-like visual signatures, especially vegetation, terrain palette and water presentation.
+5. Add large natural landmarks and stronger biome/subregion composition.
+6. Inspect flat screenshots for obvious failures, then judge scale and identity in Quest.
+7. Repeat world work until the headset test passes.
+8. **Only then choose the first real gameplay system.**
 
 ## Guardrails
 
-- Quest 3 is the principal device. Headset judgment overrides flat-browser impressions for scale and interaction.
-- Keep the product focused on VR. Desktop controls remain an opt-in regression/development harness; there are no phone gameplay controls.
-- Stay original: no copied textures, sounds, names, UI, creature designs, or Minecraft branding.
-- Preserve old saves rather than silently destroying them. The v1 prototype save uses `mineworld.skyreach.save.v1`; the v2 foundation uses its own save slot.
-- Do not re-enable dormant v0.2 bench/portal/resonator/tool progression just because the code still exists. Rebuild features deliberately when their turn comes.
-- Do not use tiny islands to create artificial content count. Major destinations must justify the trip.
-- Preserve the GitHub Pages workflow and stable play link.
-- Inspect generated screenshots for obvious composition/rendering failures before asking for headset testing, while recognizing that screenshots cannot validate VR scale or physical interaction.
+- Quest 3 is the principal device. Headset judgement overrides dimensions on paper and flat-browser impressions.
+- Keep the product VR-first. Desktop remains an opt-in development/regression harness; there are no phone gameplay controls.
+- Stay original: no copied Minecraft textures, sounds, names, UI, vegetation designs or progression structures.
+- Preserve existing saves where technically possible; if a fundamental generator change requires a new generation slot, preserve older saves separately rather than silently destroying them.
+- Do not re-enable dormant v0.2 bench/portal/resonator/tool code because it already exists.
+- Do not add traversal, crafting or progression merely to make the build seem more game-like while the world is still weak.
+- Preserve GitHub Pages deployment and automated browser regression checks.
+- Inspect generated screenshots before asking for headset testing, while recognising screenshots cannot establish VR scale.
