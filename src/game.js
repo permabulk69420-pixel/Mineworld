@@ -8,7 +8,8 @@ const INVENTORY_IDS = Object.freeze([...PALETTE, BLOCK.BASALT]);
 const HOME = Object.freeze({ x: 1.5 * BLOCK_SIZE, z: 25.5 * BLOCK_SIZE });
 const ARCH = Object.freeze({ x: 9.5 * BLOCK_SIZE, z: -10.5 * BLOCK_SIZE });
 const LUMEN_HOLLOW = Object.freeze({ x: 63.5 * BLOCK_SIZE, z: -81.5 * BLOCK_SIZE });
-const HOLLOW_FORGE = Object.freeze({ x: 63.5 * BLOCK_SIZE, z: -78 * BLOCK_SIZE });
+const HOLLOW_FORGE = Object.freeze({ x: 61.5 * BLOCK_SIZE, z: -85 * BLOCK_SIZE });
+const OLD_QUARRY = Object.freeze({ x: 53.5 * BLOCK_SIZE, z: -30.5 * BLOCK_SIZE });
 const HOLLOW_RESONATORS = Object.freeze([
   Object.freeze({ x: 57.5 * BLOCK_SIZE, z: -80.5 * BLOCK_SIZE }),
   Object.freeze({ x: 66.5 * BLOCK_SIZE, z: -76.5 * BLOCK_SIZE }),
@@ -33,7 +34,7 @@ export function createJourney(saved = null) {
   }
   // Saves created by the first Journey build could already have activated the arch
   // before tool progression existed. Treat that as proof the quarry tool was earned.
-  const resonant = saved?.tool === TOOL.RESONANT || Boolean(saved?.deepstoneReached);
+  const resonant = saved?.tool === TOOL.RESONANT || Boolean(saved?.deepstoneReached) || Boolean(saved?.quarryReached);
   const tool = resonant ? TOOL.RESONANT
     : saved?.tool === TOOL.QUARRY || saved?.archAwake || saved?.lumenReached ? TOOL.QUARRY : TOOL.HAND;
   const resonators = resonant ? [true, true, true]
@@ -44,7 +45,8 @@ export function createJourney(saved = null) {
     archAwake: Boolean(saved?.archAwake),
     lumenReached: Boolean(saved?.lumenReached),
     resonators,
-    deepstoneReached: Boolean(saved?.deepstoneReached),
+    deepstoneReached: Boolean(saved?.deepstoneReached) || Boolean(saved?.quarryReached),
+    quarryReached: Boolean(saved?.quarryReached),
   };
 }
 
@@ -58,6 +60,7 @@ export function snapshotJourney(journey = null) {
     lumenReached: Boolean(value.lumenReached),
     resonators: Array.from({ length:3 },(_,i)=>Boolean(value.resonators?.[i])),
     deepstoneReached: Boolean(value.deepstoneReached),
+    quarryReached: Boolean(value.quarryReached),
   };
 }
 
@@ -190,6 +193,10 @@ export function updateJourney(journey, body) {
       events.push('lumen-reached');
     }
   }
+  if (journey.deepstoneReached && !journey.quarryReached) {
+    const distance=Math.hypot(body.x-OLD_QUARRY.x,body.z-OLD_QUARRY.z);
+    if(distance<9){journey.quarryReached=true;events.push('quarry-reached');}
+  }
   return events;
 }
 
@@ -199,6 +206,14 @@ export function archPortalActive(journey, body) {
 
 export function hollowPortalActive(journey, body) {
   return journey.archAwake && journey.lumenReached && Math.hypot(body.x - LUMEN_HOLLOW.x, body.z - LUMEN_HOLLOW.z) < 1.6;
+}
+
+export function quarryForgePortalActive(journey, body) {
+  return journey.deepstoneReached && Math.hypot(body.x-HOLLOW_FORGE.x,body.z-HOLLOW_FORGE.z)<1.45;
+}
+
+export function quarryReturnPortalActive(journey, body) {
+  return journey.quarryReached && Math.hypot(body.x-OLD_QUARRY.x,body.z-OLD_QUARRY.z)<1.6;
 }
 
 export function journeyObjective(journey) {
@@ -219,8 +234,9 @@ export function journeyObjective(journey) {
     if (awake<3) return `Wake Hollow resonators · ${awake}/3 · feed lumen with Y`;
     return 'Hollow forge awake · press Y to temper quarry pick';
   }
-  if (!journey.deepstoneReached) return 'Resonant pick ready · break your first deepstone';
-  return 'Deepstone unlocked · the Old Quarry may answer next';
+  if (!journey.deepstoneReached) return 'Resonant pick ready · deepstone lies beneath the Hollow';
+  if (!journey.quarryReached) return 'Deepstone wakes the Hollow forge · step into its new passage';
+  return 'The Old Quarry reached · passage back to Lumen Hollow active';
 }
 
-export { REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, HOME, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS };
+export { REQUIRED_WOOD, REQUIRED_STONE, REQUIRED_CRYSTALS, HOME, ARCH, LUMEN_HOLLOW, HOLLOW_FORGE, HOLLOW_RESONATORS, OLD_QUARRY };
