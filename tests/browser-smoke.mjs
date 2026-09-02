@@ -56,12 +56,12 @@ try{
   await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
   await page.waitForFunction(()=>!!document.pointerLockElement);
   await page.keyboard.press('F3');
-  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Grounded'));
+  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Creative'));
   assert.match(await page.locator('#debug').textContent(),/Pitch -5°/,'Capturing the mouse preserves the initial view');
   await page.screenshot({path:resolve(out,'first-light.jpg'),type:'jpeg',quality:90});
   await page.keyboard.press('8');assert.equal(await page.getByRole('button',{name:'Lumen crystal',exact:true}).getAttribute('aria-pressed'),'true');
   await page.keyboard.press('f');await page.keyboard.down('Space');await pause(450);await page.keyboard.up('Space');
-  await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Flying'));
+  await page.waitForFunction(()=>document.querySelector('#location').textContent.includes('Flying'));
   // Look down from flight so mining and rebuilding cannot place the player in the edited cell.
   // CDP's absolute mouse coordinates can report zero relative motion while locked.
   // Supply a relative movement event through the same document input handler.
