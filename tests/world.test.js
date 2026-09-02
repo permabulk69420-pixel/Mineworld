@@ -54,8 +54,8 @@ test('mesher hides shared faces, including across chunk boundaries',()=>{
   }
 });
 
-test('generator v2 is repeatable, large, connected at key regions, and gives a safe home',()=>{
-  assert.equal(GENERATOR_VERSION,2);
+test('generator v3 is repeatable, large, connected at key regions, and gives a safe home',()=>{
+  assert.equal(GENERATOR_VERSION,3);
   const a=generateWorld(new VoxelWorld(DEFAULT_SEED)),b=generateWorld(new VoxelWorld(DEFAULT_SEED));
   const digest=w=>{const h=createHash('sha256');for(const [key,chunk] of w.chunks){h.update(key);h.update(chunk.data);}return h.digest('hex');};
   assert.equal(digest(a),digest(b));assert.equal(a.edits.size,0);assert.ok(a.landmarks.length>=5);
