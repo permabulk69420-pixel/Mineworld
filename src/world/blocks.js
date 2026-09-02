@@ -5,17 +5,17 @@ export const BLOCK = Object.freeze({
 
 export const BLOCKS = Object.freeze([
   { name: 'Air', solid: false, opaque: false, color: '#ffffff' },
-  { name: 'Sunmoss', solid: true, opaque: true, color: '#9aa86d', tiles: [1, 0, 2] },
-  { name: 'Rose loam', solid: true, opaque: true, color: '#75594f', tiles: [2, 2, 2] },
-  { name: 'Blue shale', solid: true, opaque: true, color: '#718187', tiles: [3, 3, 3] },
-  { name: 'Sailwood', solid: true, opaque: true, color: '#6d5847', tiles: [4, 5, 5] },
-  { name: 'Sailleaf', solid: true, opaque: true, color: '#728f78', tiles: [6, 6, 6] },
-  { name: 'Sailwood boards', solid: true, opaque: true, color: '#a78362', tiles: [7, 7, 7] },
+  { name: 'Meadow', solid: true, opaque: true, color: '#76ad66', tiles: [1, 0, 2] },
+  { name: 'Earth', solid: true, opaque: true, color: '#91624e', tiles: [2, 2, 2] },
+  { name: 'Limestone', solid: true, opaque: true, color: '#afbbb2', tiles: [3, 3, 3] },
+  { name: 'Cedar', solid: true, opaque: true, color: '#806044', tiles: [4, 5, 5] },
+  { name: 'Canopy', solid: true, opaque: true, color: '#4e9272', tiles: [6, 6, 6] },
+  { name: 'Cedar planks', solid: true, opaque: true, color: '#c79562', tiles: [7, 7, 7] },
   { name: 'Lumen crystal', solid: true, opaque: true, color: '#73eddf', tiles: [8, 8, 8], glow: true },
-  { name: 'Silver silt', solid: true, opaque: true, color: '#c9bd9e', tiles: [9, 9, 9] },
+  { name: 'Pale sand', solid: true, opaque: true, color: '#dfce9c', tiles: [9, 9, 9] },
   { name: 'Glass', solid: true, opaque: false, color: '#b1e4ea', tiles: [10, 10, 10] },
-  { name: 'Spring water', solid: false, opaque: false, color: '#3699a8', tiles: [11, 11, 11] },
-  { name: 'Nightstone', solid: true, opaque: true, color: '#425662', tiles: [12, 12, 12] },
+  { name: 'Spring water', solid: false, opaque: false, color: '#42b9ca', tiles: [11, 11, 11] },
+  { name: 'Deepstone', solid: true, opaque: true, color: '#56687a', tiles: [12, 12, 12] },
 ]);
 
 export const PALETTE = [BLOCK.GRASS, BLOCK.SOIL, BLOCK.STONE, BLOCK.WOOD,
@@ -24,7 +24,7 @@ export const BLOCK_SIZE = 0.75;
 export const CHUNK_SIZE = 16;
 export const WORLD_LIMIT = 128;
 export const HEIGHT_LIMIT = 128;
-export const GENERATOR_VERSION = 3;
+export const GENERATOR_VERSION = 2;
 export const DEFAULT_SEED = 734921;
 export const isSolid = id => Boolean(BLOCKS[id]?.solid);
 export const isOpaque = id => Boolean(BLOCKS[id]?.opaque);
