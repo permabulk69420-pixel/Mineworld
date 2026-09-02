@@ -1,130 +1,149 @@
 import { BLOCK as B, BLOCK_SIZE, GENERATOR_VERSION } from './blocks.js';
 import { fbm, hash, noise2 } from './noise.js';
 
-// Version 1 is a save-file contract. Add new generators without changing old seeds.
+const LOBES = Object.freeze([
+  { x: 0, z: 0, rx: 78, rz: 67, base: 35 },
+  { x: -56, z: -12, rx: 42, rz: 40, base: 37 },
+  { x: 46, z: -48, rx: 48, rz: 35, base: 43 },
+  { x: 52, z: 43, rx: 48, rz: 41, base: 32 },
+  { x: -34, z: 48, rx: 48, rz: 37, base: 31 },
+]);
+
 export const ISLANDS = [
-  { x: 0, z: 0, rx: 35, rz: 32, top: 35, depth: 28, name: 'First Light' },
-  { x: -53, z: -28, rx: 20, rz: 19, top: 46, depth: 30, name: 'Cedar Reach' },
-  { x: 53, z: -31, rx: 22, rz: 18, top: 38, depth: 27, name: 'The Old Quarry' },
-  { x: 1, z: -76, rx: 17, rz: 16, top: 62, depth: 40, name: 'Cloudspire' },
-  { x: -59, z: 40, rx: 17, rz: 15, top: 31, depth: 25, name: 'Mossgarden' },
-  { x: 57, z: 42, rx: 17, rz: 17, top: 49, depth: 32, name: 'Sunward' },
-  { x: 63, z: -82, rx: 13, rz: 12, top: 47, depth: 26, name: 'Lumen Hollow' },
+  { x: 0, z: 34, rx: 90, rz: 82, top: 35, depth: 40, name: 'First Light' },
 ];
 
 function crown(world, x, y, z, radius, seed) {
-  for (let dx = -radius; dx <= radius; dx++) for (let dz = -radius; dz <= radius; dz++) {
-    for (let dy = -2; dy <= 2; dy++) {
-      if ((dx * dx + dz * dz) / (radius * radius) + dy * dy / 7 > 1.13) continue;
-      if (hash(x + dx, y + dy, z + dz, seed) < 0.09) continue;
-      if (world.get(x + dx, y + dy, z + dz) === B.AIR) world.set(x + dx, y + dy, z + dz, B.LEAVES);
+  for (let dx=-radius;dx<=radius;dx++) for (let dz=-radius;dz<=radius;dz++) for (let dy=-2;dy<=2;dy++) {
+    if ((dx*dx+dz*dz)/(radius*radius)+dy*dy/7>1.14) continue;
+    if (hash(x+dx,y+dy,z+dz,seed)<0.08) continue;
+    if (world.get(x+dx,y+dy,z+dz)===B.AIR) world.set(x+dx,y+dy,z+dz,B.LEAVES);
+  }
+}
+
+function tree(world,x,y,z,seed,large=false) {
+  const height=large?12+Math.floor(hash(x,y,z,seed)*4):6+Math.floor(hash(x,y,z,seed)*5);
+  for(let dy=0;dy<height;dy++) world.set(x,y+dy,z,B.WOOD);
+  if(large) for(let dy=0;dy<height-3;dy++) world.set(x+1,y+dy,z,B.WOOD);
+  crown(world,x,y+height,z,large?6:3+(hash(x,0,z,seed)>.55?1:0),seed);
+  if(large){
+    for(const [dx,dz] of [[-5,1],[4,4],[2,-5]]){
+      for(let i=0;i<6;i++) world.set(x+Math.round(dx*i/5),y+height-5+i,z+Math.round(dz*i/5),B.WOOD);
+      crown(world,x+dx,y+height,z+dz,4,seed+dx*17+dz);
     }
   }
 }
 
-function tree(world, x, y, z, seed, large = false) {
-  const height = large ? 11 : 5 + Math.floor(hash(x, y, z, seed) * 3);
-  for (let dy = 0; dy < height; dy++) {
-    world.set(x, y + dy, z, B.WOOD);
-    if (large) world.set(x + 1, y + dy, z, B.WOOD);
+function landShape(x,z,seed) {
+  let best=null,bestInfluence=-Infinity;
+  for(const lobe of LOBES){
+    const d=Math.hypot((x-lobe.x)/lobe.rx,(z-lobe.z)/lobe.rz);
+    const influence=1-d;
+    if(influence>bestInfluence){bestInfluence=influence;best=lobe;}
   }
-  crown(world, x, y + height, z, large ? 6 : 3, seed);
-  if (large) {
-    for (const [dx, dz] of [[-4, 0], [3, 3], [0, -4]]) {
-      for (let i = 0; i < 5; i++) world.set(x + Math.round(dx * i / 4), y + height - 4 + i, z + Math.round(dz * i / 4), B.WOOD);
-      crown(world, x + dx, y + height, z + dz, 4, seed + dx);
-    }
-  }
+  const ragged=noise2(x*.055,z*.055,seed+404)*.085+noise2(x*.17,z*.17,seed+91)*.025;
+  return {inside:bestInfluence+ragged>0,lobe:best,influence:Math.max(0,bestInfluence)};
 }
 
-function arch(world, cx, y, cz) {
-  for (let x = -5; x <= 5; x++) for (let z = -2; z <= 2; z++) world.set(cx + x, y, cz + z, B.STONE);
-  for (let dy = 1; dy <= 8; dy++) for (const dx of [-4, 4]) {
-    world.set(cx + dx, y + dy, cz, dy % 4 === 0 ? B.CRYSTAL : B.STONE);
-    world.set(cx + dx, y + dy, cz + 1, B.STONE);
-  }
-  for (let x = -3; x <= 3; x++) {
-    const h = Math.abs(x) === 3 ? 9 : 10;
-    world.set(cx + x, y + h, cz, B.STONE);
-    world.set(cx + x, y + h, cz + 1, B.STONE);
-  }
-  world.set(cx, y + 10, cz, B.CRYSTAL);
+function topHeight(x,z,shape,seed) {
+  let top=shape.lobe.base+fbm(x*.035,z*.035,seed)*7+fbm(x*.095,z*.095,seed+57)*2.5;
+  // A broad northern ridge creates a destination visible from the lower country.
+  const ridge=Math.max(0,1-Math.hypot((x-35)/46,(z+48)/23));
+  top+=ridge*11;
+  // A long western escarpment gives the continent a strong outer silhouette.
+  const west=Math.max(0,1-Math.hypot((x+59)/28,(z+8)/45));
+  top+=west*5;
+  // The southern meadow is intentionally lower and more open.
+  const meadow=Math.max(0,1-Math.hypot((x-30)/48,(z-48)/34));
+  top-=meadow*3;
+  return Math.floor(top);
 }
 
-export function generateWorld(world, version = GENERATOR_VERSION) {
-  if (version !== 1) throw new Error('This world uses a newer terrain generator.');
-  const { seed } = world;
-  world.surfaces = [];
-  for (let n = 0; n < ISLANDS.length; n++) {
-    const island = ISLANDS[n];
-    const columns = [];
-    for (let x = island.x - island.rx - 2; x <= island.x + island.rx + 2; x++) {
-      for (let z = island.z - island.rz - 2; z <= island.z + island.rz + 2; z++) {
-        const dx = x - island.x, dz = z - island.z;
-        const distance = Math.hypot(dx / island.rx, dz / island.rz);
-        const edge = 1 + noise2(x * 0.2, z * 0.2, seed + n) * 0.08;
-        if (distance > edge) continue;
-        let top = Math.floor(island.top + fbm(x * 0.075, z * 0.075, seed) * 5 + Math.max(0, 1 - distance) * 3);
-        const lakeDistance = Math.hypot((x + 9) / 1.15, z - 2);
-        if (n === 0 && lakeDistance < 9) top = Math.min(top, 32 + Math.floor(lakeDistance / 8));
-        const thickness = Math.max(2, Math.floor(island.depth * Math.pow(Math.max(0, 1 - distance ** 1.5), 0.65)));
-        const bottom = Math.max(2, island.top - thickness);
-        for (let y = bottom; y <= top; y++) {
-          // Two connected, daylight-visible tunnels beneath the home island.
-          const cave = n === 0 && y < top - 3 && y > bottom + 2 &&
-            (Math.hypot(y - 27, (x - 8) * 0.9) < 3.2 || Math.hypot(y - 25, (z + 13) * 0.8) < 3.1);
-          if (cave) continue;
-          let block = y === top ? B.GRASS : y >= top - 3 ? B.SOIL : y < island.top - 9 ? B.BASALT : B.STONE;
-          if (n === 0 && lakeDistance < 10 && y >= top - 1) block = B.SAND;
-          if (y < top - 4 && hash(x, y, z, seed) > 0.982) block = B.CRYSTAL;
-          if (n === 2 && y === top && hash(x, y, z, seed) > 0.35) block = B.STONE;
-          world.set(x, y, z, block);
-        }
-        if (n === 0 && lakeDistance < 8.5) for (let y = top + 1; y <= 34; y++) world.set(x, y, z, B.WATER);
-        columns.push({ x, z, top, distance, lakeDistance });
-        world.surfaces.push({x,y:top,z});
-      }
+export function generateWorld(world, version=GENERATOR_VERSION) {
+  if(version!==2) throw new Error('This build expects the large-world generator.');
+  const {seed}=world;
+  world.surfaces=[];world.landmarks=[];
+  const columns=[];
+  const lakeX=-22,lakeZ=17,waterLevel=33;
+
+  for(let x=-104;x<=106;x++) for(let z=-91;z<=91;z++){
+    const shape=landShape(x,z,seed);if(!shape.inside)continue;
+    let top=topHeight(x,z,shape,seed);
+    const lakeDistance=Math.hypot((x-lakeX)/1.2,z-lakeZ);
+    if(lakeDistance<16) top=Math.min(top,30+Math.floor(lakeDistance*.16));
+    const thickness=Math.max(10,Math.floor(18+shape.influence*30));
+    const bottom=Math.max(2,top-thickness);
+
+    for(let y=bottom;y<=top;y++){
+      // Broad caves instead of tiny tubes: enough room to walk through in VR.
+      const caveA=y<top-4&&y>bottom+3&&Math.hypot((x+18)*.42,y-24)<4.4&&z>-30&&z<34;
+      const caveB=y<top-5&&y>bottom+4&&Math.hypot((z+31)*.45,y-29)<4.8&&x>8&&x<65;
+      if(caveA||caveB)continue;
+      let id=y===top?B.GRASS:y>=top-3?B.SOIL:y<top-14?B.BASALT:B.STONE;
+      if(lakeDistance<18&&y>=top-1)id=B.SAND;
+      // Exposed limestone on steep high country, not tiny decorative props.
+      if(y===top&&(top>43||Math.abs(noise2(x*.08,z*.08,seed+812))>.78)&&hash(x,y,z,seed+12)>.46)id=B.STONE;
+      world.set(x,y,z,id);
     }
-    for (const { x, z, top, distance, lakeDistance } of columns) {
-      if (distance > 0.82 || (n === 0 && (lakeDistance < 12 || (Math.abs(x) < 9 && z > 14) || Math.hypot(x - 9, z + 10) < 10))) continue;
-      if (x % 6 !== 0 || z % 6 !== 0 || hash(x, 0, z, seed + 85) < 0.40 || n === 2) continue;
-      tree(world, x, top + 1, z, seed + n);
+    if(lakeDistance<14) for(let y=top+1;y<=waterLevel;y++) world.set(x,y,z,B.WATER);
+    columns.push({x,z,top,lakeDistance});
+    world.surfaces.push({x,y:top,z});
+  }
+
+  // A shallow stream leaves the lake and cuts toward the western cliff.
+  for(let x=-23;x>=-87;x--){
+    const z=17+Math.round(Math.sin((x+23)*.13)*2);
+    const surface=world.surface(x,z);
+    if(surface<2)continue;
+    for(let dz=-1;dz<=1;dz++){
+      const y=world.surface(x,z+dz);
+      if(y<2)continue;
+      world.set(x,y,z+dz,B.SAND);
+      if(y+1<=waterLevel)world.set(x,y+1,z+dz,B.WATER);
     }
-    const ly = world.surface(island.x, island.z);
-    world.landmarks.push({ name: island.name, x: island.x * BLOCK_SIZE, y: ly * BLOCK_SIZE, z: island.z * BLOCK_SIZE });
   }
 
-  tree(world, -19, world.surface(-19, -11), -11, seed + 100, true);
-  const archY = world.surface(9, -11);
-  arch(world, 9, archY, -11);
+  // Dense but readable cedar country. Spawn and meadow clearings remain open.
+  for(const {x,z,top,lakeDistance} of columns){
+    if(lakeDistance<22)continue;
+    if(Math.hypot(x,z-34)<12)continue;
+    const openMeadow=Math.hypot((x-34)/45,(z-49)/28)<1;
+    const chance=openMeadow?.91:.78;
+    if(x%5!==0||z%5!==0||hash(x,0,z,seed+85)<chance)continue;
+    const large=hash(x,top,z,seed+510)>.86;
+    tree(world,x,top+1,z,seed+31,large);
+  }
 
-  // The spring crosses the cliff and spills into the cloud sea. Water is decorative in v1.
-  for(let x=-17;x>=-34;x--) for(let z=1;z<=2;z++) {
-    for(let y=35;y<=44;y++) world.set(x,y,z,B.AIR);
-    world.set(x,32,z,B.SAND);
-    world.set(x,33,z,B.WATER);world.set(x,34,z,B.WATER);
+  // A handful of huge cedars establish scale without adding prefab buildings.
+  for(const [x,z] of [[-48,-8],[-18,-42],[42,-38],[68,18],[-38,54]]){
+    const y=world.surface(x,z);if(y>2)tree(world,x,y+1,z,seed+700+x,true);
   }
-  for(let y=7;y<=34;y++) for(let z=1;z<=2;z++) world.set(-35,y,z,B.WATER);
 
-  // A buildable cedar lookout makes a safe, recognizable home location.
-  const homeY = world.surface(1, 23);
-  for (let x = -3; x <= 5; x++) for (let z = 21; z <= 28; z++) {
-    for (let y = homeY; y < homeY + 5; y++) world.set(x, y, z, B.AIR);
-    world.set(x, homeY - 1, z, B.PLANKS);
+  // A natural crystal seam exists as a distant curiosity, but progression does not point at it yet.
+  for(const [x,z] of [[55,-58],[-70,-17]]){
+    const y=world.surface(x,z);
+    if(y>3){world.set(x,y+1,z,B.CRYSTAL);world.set(x,y+2,z,B.CRYSTAL);world.set(x+1,y+1,z,B.CRYSTAL);}
   }
-  for (const [x, z] of [[-3, 27], [5, 27]]) {
-    for (let y = homeY; y < homeY + 2; y++) world.set(x, y, z, B.WOOD);
-    world.set(x, homeY + 2, z, B.CRYSTAL);
-  }
-  world.spawn = { x: 1.5 * BLOCK_SIZE, y: homeY * BLOCK_SIZE + 0.02, z: 25.5 * BLOCK_SIZE };
 
-  // Exposed lumen outcrops, all real editable blocks.
-  for (const [x, z] of [[18,8],[-8,-24],[52,-32],[63,-81]]) {
-    const y = world.surface(x,z);
-    for (let i = 0; i < 4; i++) world.set(x, y + i, z, B.CRYSTAL);
-    world.set(x + 1, y, z, B.CRYSTAL);
-    world.set(x - 1, y + 1, z, B.CRYSTAL);
+  const spawnX=0,spawnZ=34,spawnY=world.surface(spawnX,spawnZ);
+  // Ensure the initial several metres are natural ground and free of tree canopy/trunks.
+  for(let x=spawnX-7;x<=spawnX+7;x++) for(let z=spawnZ-7;z<=spawnZ+7;z++){
+    const top=world.surface(x,z);if(top<2)continue;
+    for(let y=top+1;y<Math.min(127,top+18);y++) if(world.get(x,y,z)===B.WOOD||world.get(x,y,z)===B.LEAVES)world.set(x,y,z,B.AIR);
   }
-  world.dirty = new Set(world.chunks.keys());
+  world.spawn={x:(spawnX+.5)*BLOCK_SIZE,y:spawnY*BLOCK_SIZE+.02,z:(spawnZ+.5)*BLOCK_SIZE};
+
+  for(const landmark of [
+    {name:'First Light',x:0,z:34},
+    {name:'Cedar Vale',x:-48,z:-5},
+    {name:'North Ridge',x:37,z:-52},
+    {name:'South Meadow',x:39,z:51},
+    {name:'West Cliffs',x:-72,z:-4},
+  ]){
+    const y=world.surface(landmark.x,landmark.z);
+    world.landmarks.push({name:landmark.name,x:landmark.x*BLOCK_SIZE,y:y*BLOCK_SIZE,z:landmark.z*BLOCK_SIZE});
+  }
+
+  world.dirty=new Set(world.chunks.keys());
   return world;
 }
