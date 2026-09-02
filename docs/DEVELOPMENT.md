@@ -1,5 +1,29 @@
 # Development journal
 
+## v0.2 — Journey mode begins — 2026-09-02
+
+The owner's first headset test clarified the product direction: Mineworld should be developed as a game first, not primarily as a creative sandbox. The normal entry is now Journey mode. Creative remains an explicit development/free-building option via `?creative=1`.
+
+Journey mode introduces a finite block inventory. Mining editable palette blocks adds them to the player's pack; placing a block consumes one. New Journey worlds start with eight cedar planks so the player can make an immediate small construction without unlimited resources. Flight is disabled in Journey mode.
+
+The left-wrist display now shows the selected material, stack count, and current objective. The first progression thread is intentionally small: gather six lumen crystals, carry them to the Old Arch, awaken it, then follow the objective toward Lumen Hollow. Inventory and progression state are persisted inside the existing version-1 save format, so earlier valid saves remain readable and generator version 1 is unchanged.
+
+Added pure game-state tests for finite inventory spending and the Old Arch progression transition. The first CI attempt exposed a backwards-compatibility bug in `createSave` callers that did not yet supply Journey state; the build correctly stopped before deployment. `snapshotJourney` was made backwards-compatible and a replacement CI run was queued.
+
+### Validation status
+
+- Existing world, physics, input, and save tests remain in the workflow.
+- New Journey inventory/progression tests are included.
+- First Journey CI attempt failed before build/deploy due to the legacy `createSave` test path; that defect was fixed in the following commit.
+- Final build/browser/deployment status for this iteration is pending the latest Actions run.
+- Actual Quest 3 validation of Journey-mode wrist readability, resource feel, and objective pacing is still required.
+
+### Next direction
+
+Assuming the build and headset controls remain stable, continue turning the interaction model into a game: give materials different gathering requirements, introduce the first tactile tool/crafting decision, and make the awakened arch materially change the world rather than existing only as an objective flag. Preserve a strong reason to explore and a strong reason to return home.
+
+---
+
 ## v0.1 — Skyreach foundation — 2026-09-02
 
 Implemented the first playable archipelago: seven islands, a spring and cliff spill, caves, cedar trees, an ancient stone arch, lumen deposits, and a safe cedar lookout. The landscape consists of real editable blocks. Instanced grass and atmospheric elements are decorative.
