@@ -38,7 +38,7 @@ try{
   assert.equal(await page.locator('#play-button').isVisible(),false,'The public entry is VR only');
   assert.equal(await page.locator('#touch-controls').count(),0);
 
-  // Journey is the product default. The desktop harness only verifies shared game behavior.
+  // Journey must read as a game from frame one: empty pack, no creative palette, no flight.
   await page.setViewportSize({width:1024,height:768});
   await page.goto(url+'?test=1');await ready(page);
   await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
@@ -47,8 +47,10 @@ try{
   await page.waitForFunction(()=>document.querySelector('#debug').textContent.includes('Field tool'));
   await page.keyboard.press('f');await pause(250);
   assert.doesNotMatch(await page.locator('#debug').textContent(),/Flying/,'Journey mode must not enable flight');
-  assert.match(await page.locator('#debug').textContent(),/Quarry pick · cedar 0\/4 · limestone 0\/6/);
-  notes.push('Journey default: field-tool objective is active and creative flight is disabled.');
+  assert.match(await page.locator('#debug').textContent(),/Field bench · cedar 0\/3 · limestone 0\/2/);
+  assert.equal(await page.locator('#hotbar button:visible').count(),0,'Journey must not expose unowned build materials');
+  assert.equal(await page.locator('#selected-label').textContent(),'Hands · empty pack');
+  notes.push('Journey default: empty pack, no exposed creative palette, player-built bench objective, and creative flight disabled.');
 
   // Creative mode stays available as an explicit development harness so visual regression
   // can reach arbitrary geometry without weakening the normal game rules.
@@ -62,15 +64,9 @@ try{
   await page.keyboard.press('8');assert.equal(await page.getByRole('button',{name:'Lumen crystal',exact:true}).getAttribute('aria-pressed'),'true');
   await page.keyboard.press('f');await page.keyboard.down('Space');await pause(450);await page.keyboard.up('Space');
   await page.waitForFunction(()=>document.querySelector('#location').textContent.includes('Flying'));
-  // Look down from flight so mining and rebuilding cannot place the player in the edited cell.
-  // CDP's absolute mouse coordinates can report zero relative motion while locked.
-  // Supply a relative movement event through the same document input handler.
   await page.dispatchEvent('body','mousemove',{movementX:0,movementY:460,bubbles:true});
   await page.waitForFunction(()=>document.querySelector('#target-name').textContent.length>0);
   const before=await editCount(page);
-  // CDP mouse.down reuses absolute cursor coordinates and creates a spurious
-  // look movement under pointer lock. Dispatch through the game's pointer
-  // handlers instead; mining, targeting, meshing, and persistence stay real.
   await page.dispatchEvent('#world','pointerdown',{pointerType:'mouse',button:0,buttons:1,bubbles:true});
   await page.waitForFunction(n=>Number(document.querySelector('#debug').textContent.match(/(\d+) block edits/)?.[1])>n,before,{timeout:10000});
   await page.dispatchEvent('#world','pointerup',{pointerType:'mouse',button:0,buttons:0,bubbles:true});
@@ -112,8 +108,6 @@ try{
   await page.screenshot({path:resolve(out,'lumen-hollow.jpg'),type:'jpeg',quality:90});
   notes.push('Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.');
 
-  // Leave the running Hollow page before injecting the next staged save. Otherwise its
-  // pagehide autosave would overwrite the synthetic Quarry state during navigation.
   await page.goto(url);await ready(page);
 
   // Start directly on the deepstone-awakened forge. The runtime must perform the actual
