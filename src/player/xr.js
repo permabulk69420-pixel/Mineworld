@@ -136,20 +136,28 @@ export class XRControls {
   }
 
   updateWrist(selected,flying,game=null){
-    const count=game?.creative?'∞':game?.inventory?.[PALETTE[selected]]??0;
-    const deepstone=game?.creative?0:game?.inventory?.[BLOCK.BASALT]??0;
+    const inventory=game?.inventory||{};
+    const available=game?.creative?[...PALETTE]:PALETTE.filter(id=>(inventory[id]||0)>0);
+    const selectedId=PALETTE[selected],selectedCount=game?.creative?'∞':inventory[selectedId]||0;
+    const deepstone=game?.creative?0:inventory[BLOCK.BASALT]||0;
     const objective=game?.creative?'Creative build mode':game?.objective||'Explore Skyreach';
     const tool=game?.creative?'BUILDER TOOL':game?.tool==='resonant'?'RESONANT PICK':game?.tool==='quarry'?'QUARRY PICK':'FIELD TOOL';
-    const key=`${selected}:${flying}:${count}:${deepstone}:${objective}:${tool}`;if(this.wristKey===key)return;this.wristKey=key;
+    const key=`${selected}:${flying}:${PALETTE.map(id=>inventory[id]||0).join(',')}:${deepstone}:${objective}:${tool}:${game?.creative}`;if(this.wristKey===key)return;this.wristKey=key;
     const ctx=this.wristCanvas.getContext('2d');ctx.clearRect(0,0,512,256);
     ctx.fillStyle='rgba(12,30,35,.92)';ctx.beginPath();ctx.roundRect(0,0,512,256,22);ctx.fill();
     ctx.fillStyle='#a0e4c1';ctx.font='600 22px system-ui';ctx.fillText('MINEWORLD',24,40);
     ctx.textAlign='right';ctx.fillStyle='#cfddd5';ctx.fillText(game?.creative?(flying?'CREATIVE · FLY':'CREATIVE'):tool,488,40);ctx.textAlign='left';
-    ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(`${BLOCKS[PALETTE[selected]].name}  ×${count}`,24,84);
-    PALETTE.forEach((id,i)=>{ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(26+i*53,102,38,38);if(i===selected){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(22+i*53,98,46,46);}});
+    ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';
+    ctx.fillText(available.length?(selectedCount?`${BLOCKS[selectedId].name}  ×${selectedCount}`:'PACK'):'PACK EMPTY',24,84);
+    if(available.length){
+      const gap=Math.min(58,430/Math.max(1,available.length));
+      available.forEach((id,i)=>{const x=26+i*gap;ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(x,102,38,38);if(id===selectedId){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(x-4,98,46,46);}});
+    }else{
+      ctx.font='18px system-ui';ctx.fillStyle='#819999';ctx.fillText('Gather blocks to carry building materials.',24,126);
+    }
     ctx.font='600 18px system-ui';ctx.fillStyle='#d9e6df';ctx.fillText(objective.slice(0,52),24,177);
     ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';
-    const hint=game?.creative?'X: material · Y: flight · trigger mine · grip build':game?.tool==='resonant'?`Deepstone ×${deepstone} · trigger: gather · Y: use`:'Trigger: gather · grip: place · X: material · Y: craft/use';
+    const hint=game?.creative?'X: material · Y: flight · trigger mine · grip build':game?.tool==='resonant'?`Deepstone ×${deepstone} · trigger: gather · Y: use`:'Trigger: gather · grip: place · X: carried material · Y: craft/use';
     ctx.fillText(hint,24,211);
     ctx.font='17px system-ui';ctx.fillStyle='#819999';ctx.fillText('Left trigger: teleport · right stick: turn',24,238);
     this.wristTexture.needsUpdate=true;
