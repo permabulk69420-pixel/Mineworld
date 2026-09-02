@@ -2,9 +2,9 @@ VR settings: stick movement is default, teleport is opt-in, and wrist display de
 Foundation Journey: visual-reset First Light rendered with empty pack and no bench/portal/tool progression exposed.
 Creative developer mode: visual-reset WebGL render, pointer lock, flight, material selection, v3 save, and export passed.
 Desktop diagnostics: 3 FPS
-219 draw calls · 199,942 triangles
+217 draw calls · 202,096 triangles
 367 chunks · 0 block edits
-XYZ 24.4 / 21.8 / 39.1
+XYZ 24.4 / 21.8 / 39.0
 Yaw 0° · Pitch -5°
 Creative · Seed 734921
 Actual Quest scale and interaction still require headset validation.
