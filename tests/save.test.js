@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { VoxelWorld } from '../src/world/world.js';
 import { BLOCK as B, DEFAULT_SEED } from '../src/world/blocks.js';
+import { createJourney, TOOL } from '../src/game.js';
 import { createSave, validateSave, writeSave, readSave, SAVE_KEY } from '../src/save.js';
 
 const player={snapshot:()=>({x:1,y:28,z:3,yaw:0,pitch:0,flying:false})};
@@ -13,6 +14,22 @@ test('export/import preserves block removals, material selection, seed, and posi
   const restored=new VoxelWorld(save.seed);restored.set(1,2,3,B.STONE);restored.applyEdits(save.edits);
   assert.equal(restored.get(1,2,3),B.AIR);assert.equal(restored.get(-1,2,-3),B.CRYSTAL);assert.equal(save.selected,7);assert.equal(save.player.y,28);
   const storage=memory();assert.equal(writeSave(storage,save).ok,true);assert.deepEqual(readSave(storage).data,save);
+});
+
+test('Journey tool, resonators, deepstone, and quarry discovery survive save validation',()=>{
+  const world=new VoxelWorld(DEFAULT_SEED);
+  const journey=createJourney({
+    tool:TOOL.RESONANT,archAwake:true,lumenReached:true,resonators:[true,true,true],
+    deepstoneReached:true,quarryReached:true,inventory:{[B.CRYSTAL]:2,[B.BASALT]:4},
+  });
+  const save=validateSave(JSON.parse(JSON.stringify(createSave(world,player,7,journey))));
+  assert.equal(save.journey.tool,TOOL.RESONANT);
+  assert.deepEqual(save.journey.resonators,[true,true,true]);
+  assert.equal(save.journey.inventory[B.CRYSTAL],2);
+  assert.equal(save.journey.inventory[B.BASALT],4);
+  assert.equal(save.journey.deepstoneReached,true);
+  assert.equal(save.journey.quarryReached,true);
+  const storage=memory();assert.equal(writeSave(storage,save).ok,true);assert.deepEqual(readSave(storage).data.journey,save.journey);
 });
 
 test('corrupt or future-version saves are preserved instead of silently overwritten',()=>{
