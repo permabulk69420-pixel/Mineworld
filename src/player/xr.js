@@ -23,7 +23,6 @@ export class XRControls {
       controller.addEventListener('disconnected',()=>{controller.userData.source=null;grip.userData.hand=null;this.previous.clear();});
       const beam=new THREE.Line(beamGeometry,new THREE.LineBasicMaterial({color:0xc4fff0,transparent:true,opacity:0.5}));
       beam.scale.z=6;controller.add(beam);
-      // A tiny original tool, with no external controller-model downloads.
       const handle=new THREE.Mesh(new THREE.CylinderGeometry(0.019,0.025,0.105,8),new THREE.MeshLambertMaterial({color:0x34494d}));
       handle.rotation.x=-0.32;handle.position.z=0.02;grip.add(handle);
       const cap=new THREE.Mesh(new THREE.BoxGeometry(0.041,0.018,0.055),new THREE.MeshBasicMaterial({color:0x88e6c7}));
@@ -118,16 +117,19 @@ export class XRControls {
     if(this.destination)this.marker.position.set(this.destination.x,this.destination.y+0.025,this.destination.z);
   }
 
-  updateWrist(selected,flying){
-    const key=`${selected}:${flying}`;if(this.wristKey===key)return;this.wristKey=key;
+  updateWrist(selected,flying,game=null){
+    const count=game?.creative?'∞':game?.inventory?.[PALETTE[selected]]??0;
+    const objective=game?.creative?'Creative build mode':game?.objective||'Explore Skyreach';
+    const key=`${selected}:${flying}:${count}:${objective}`;if(this.wristKey===key)return;this.wristKey=key;
     const ctx=this.wristCanvas.getContext('2d');ctx.clearRect(0,0,512,256);
     ctx.fillStyle='rgba(12,30,35,.92)';ctx.beginPath();ctx.roundRect(0,0,512,256,22);ctx.fill();
     ctx.fillStyle='#a0e4c1';ctx.font='600 22px system-ui';ctx.fillText('MINEWORLD',24,40);
-    ctx.textAlign='right';ctx.fillStyle='#cfddd5';ctx.fillText(flying?'FLYING':'WALKING',488,40);ctx.textAlign='left';
-    ctx.font='600 32px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(BLOCKS[PALETTE[selected]].name,24,91);
-    PALETTE.forEach((id,i)=>{ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(26+i*53,112,38,38);if(i===selected){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(22+i*53,108,46,46);}});
-    ctx.font='21px system-ui';ctx.fillStyle='#d9e6df';ctx.fillText('X: material   Y: flight   A / B: up / down',24,195);
-    ctx.font='19px system-ui';ctx.fillStyle='#9fb4b4';ctx.fillText('Right: trigger mine · grip build',24,230);
+    ctx.textAlign='right';ctx.fillStyle='#cfddd5';ctx.fillText(game?.creative?(flying?'CREATIVE · FLY':'CREATIVE'):'JOURNEY',488,40);ctx.textAlign='left';
+    ctx.font='600 30px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(`${BLOCKS[PALETTE[selected]].name}  ×${count}`,24,84);
+    PALETTE.forEach((id,i)=>{ctx.fillStyle=BLOCKS[id].color;ctx.fillRect(26+i*53,102,38,38);if(i===selected){ctx.strokeStyle='#fff3b8';ctx.lineWidth=4;ctx.strokeRect(22+i*53,98,46,46);}});
+    ctx.font='600 18px system-ui';ctx.fillStyle='#d9e6df';ctx.fillText(objective.slice(0,48),24,177);
+    ctx.font='18px system-ui';ctx.fillStyle='#9fb4b4';ctx.fillText(game?.creative?'X: material · Y: flight · trigger mine · grip build':'X: material · trigger gather · grip place',24,211);
+    ctx.font='17px system-ui';ctx.fillStyle='#819999';ctx.fillText('Left trigger: teleport · right stick: turn',24,238);
     this.wristTexture.needsUpdate=true;
   }
 }
