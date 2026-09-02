@@ -112,6 +112,10 @@ try{
   await page.screenshot({path:resolve(out,'lumen-hollow.jpg'),type:'jpeg',quality:90});
   notes.push('Lumen Hollow staged Journey render: waystone, forge, resonator progression state, and objective rendered without browser errors.');
 
+  // Leave the running Hollow page before injecting the next staged save. Otherwise its
+  // pagehide autosave would overwrite the synthetic Quarry state during navigation.
+  await page.goto(url);await ready(page);
+
   // Start directly on the deepstone-awakened forge. The runtime must perform the actual
   // portal traversal, discover Old Quarry, and enable its paired return state.
   await page.evaluate(save=>{
