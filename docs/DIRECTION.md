@@ -1,22 +1,24 @@
 # Direction: a world worth returning to
 
-Mineworld should become a beautiful, tactile, solitary VR building and exploration game. Minecraft's readable voxel interactions are the starting vocabulary; the setting, progression, creatures, and discoveries should find their own identity.
+Mineworld should become a beautiful, tactile, solitary VR exploration/building game. Minecraft's readable voxel interactions are the starting vocabulary; the setting, progression, creatures, discoveries, and reasons to build should find their own identity.
 
 ## Skyreach
 
 The first place is an archipelago suspended over a cloud sea. Cedar groves shelter pale springs. Exposed deepstone holds luminous teal crystals. Old arches suggest that these islands once connected to somewhere else. Warm daylight, a ringed planet, greenery, and useful empty space make building a home appealing.
 
-The early loop is simple: explore, shape the landscape, choose a place to build, and return to it. The world should be pleasant to inhabit before it becomes demanding. Creative mode lets the first playtests focus on scale, feel, performance, and the pleasure of building.
+The normal player experience is **Journey mode**, not an unrestricted sandbox. The early loop is: explore, gather finite materials, shape the landscape, build from what you have earned, discover a landmark, and use it to push farther into the world. Creative mode remains useful for development and free building, but it should not determine progression design.
+
+The first progression thread begins with lumen crystals and the Old Arch. It should eventually grow into waystones, distinct realms, useful tools, crafting, environmental threats, creatures, and discoveries that give the player reasons to leave home and reasons to return.
 
 ## Development priorities
 
 1. Make headset movement, targeting, reach, and sustained performance reliable.
-2. Make the terrain more beautiful and varied without sacrificing clarity or frame time.
-3. Give exploration a concrete reason: discover and restore waystones, then travel to a distinct second realm.
-4. Add tactile tool and inventory interactions, followed by a small, coherent crafting loop.
+2. Turn the voxel interaction into a satisfying game economy: gathering, finite inventory, tools, useful crafting, and meaningful building choices.
+3. Give exploration a concrete reason: restore old structures and waystones, then travel to distinct places with new resources and rules.
+4. Add threats and creatures only when they reinforce exploration and inhabiting the world rather than turning Mineworld into a generic combat game.
 5. Expand world generation and content only as far as persistence and performance support.
 
-These priorities guide decisions; they are not a promise to implement every feature at once. Prefer one complete loop over a menu full of unfinished systems. Let occasional player feedback revise the direction.
+Prefer one complete loop over a menu full of unfinished systems. Freeform building matters, but it should live inside a game with goals, scarcity, discovery, and progression.
 
 ## Guardrails
 
