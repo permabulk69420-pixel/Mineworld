@@ -1,25 +1,9 @@
-MINEWORLD
-First Light · Flying
-Saved on this device
-Flying F
-☰
-Lumen crystal
-1
-2
-3
-4
-5
-6
-7
-8
-9
-MINE LMB · BUILD RMB · FLY F
-2 FPS
-133 draw calls · 75,705 triangles
-187 chunks · 0 block edits
-XYZ 1.1 / 27.0 / 19.1
-Yaw 41° · Pitch 15°
+Desktop test mode: WebGL render, pointer lock, flight, mining, placement, material selection, reload, and save export passed.
+Desktop diagnostics: 6 FPS
+284 draw calls · 138,519 triangles
+187 chunks · 1 block edits
+XYZ 1.1 / 27.3 / 19.1
+Yaw 0° · Pitch -68°
 Flying · Seed 734921
-page.waitForFunction: Timeout 10000ms exceeded.
-    at /home/runner/work/Mineworld/Mineworld/tests/browser-smoke.mjs:56:14
+Actual immersive Quest sessions and headset performance require a device playtest.
 Browser errors:
