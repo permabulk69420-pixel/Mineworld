@@ -60,7 +60,7 @@ try{
   assert.doesNotMatch(await page.locator('#debug').textContent(),/Quarry pick|Hollow|Old Quarry|field bench/i);
   await pause(900);
   await page.screenshot({path:resolve(out,'foundation-start.jpg'),type:'jpeg',quality:90});
-  notes.push('Foundation Journey: large-world start rendered with empty pack and no bench/portal/tool progression exposed.');
+  notes.push('Foundation Journey: visual-reset First Light rendered with empty pack and no bench/portal/tool progression exposed.');
 
   await page.goto(url+'?test=1&creative=1');await ready(page);
   await page.getByRole('button',{name:/Start desktop test|Resume desktop test/}).click();
@@ -72,16 +72,16 @@ try{
   await page.keyboard.press('f');await page.waitForFunction(()=>document.querySelector('#location').textContent.includes('Flying'));
   await page.keyboard.down('w');await pause(1200);await page.keyboard.up('w');
   await page.screenshot({path:resolve(out,'large-world-flight.jpg'),type:'jpeg',quality:90});
-  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('mineworld.skyreach.save.v2')));
-  assert.equal(stored.generatorVersion,2);assert.equal(stored.selected,7);
+  const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('mineworld.skyreach.save.v3')));
+  assert.equal(stored.generatorVersion,3);assert.equal(stored.selected,7);
   await page.keyboard.press('Escape');
   await page.waitForFunction(()=>!document.querySelector('#welcome').hidden);
   await page.getByRole('button',{name:'Controls & settings'}).click();
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Export world'}).click();
   const download=await downloadPromise;await download.saveAs(resolve(out,'world-export.json'));
   const exported=JSON.parse(await readFile(resolve(out,'world-export.json'),'utf8'));
-  assert.equal(exported.generatorVersion,2);assert.equal(exported.seed,stored.seed);
-  notes.push('Creative developer mode: large-world WebGL render, pointer lock, flight, material selection, v2 save, and export passed.');
+  assert.equal(exported.generatorVersion,3);assert.equal(exported.seed,stored.seed);
+  notes.push('Creative developer mode: visual-reset WebGL render, pointer lock, flight, material selection, v3 save, and export passed.');
 
   assert.deepEqual(errors,[],'No browser runtime or shader errors');
   notes.push(`Desktop diagnostics: ${await page.locator('#debug').textContent()}`);
